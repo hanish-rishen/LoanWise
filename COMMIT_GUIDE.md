@@ -572,88 +572,76 @@ git push origin main
 
 ### **Command 38 - Teammate 2**
 ```bash
-# Always pull latest changes first
-git pull origin main
-# [Work on API optimizations]
-git add src/services/
-git commit -m "perf: optimize API calls and service performance
+# Check total commits by author
+git shortlog -sn
 
-- Implement request caching strategies
-- Add API response optimization
-- Create service call batching
-- Add error retry mechanisms"
-git push origin main
-```
+# Check commits in date range
+git log --since="2025-09-01" --pretty=format:"%an" | sort | uniq -c
 
-### **Command 39 - Teammate 1**
-```bash
-# Always pull latest changes first
-git pull origin main
-# [Work on final UI polish]
-git add src/components/
-git commit -m "feat(ui): add final UI polish and accessibility improvements
-
-- Improve accessibility features and ARIA labels
-- Add keyboard navigation support
-- Enhance screen reader compatibility
-- Add loading states and transitions"
-git push origin main
-```
-
-### **Command 40 - Teammate 2**
-```bash
-# Always pull latest changes first
-git pull origin main
-# [Work on final improvements]
-git add src/
-git commit -m "fix: resolve final bugs and improve user experience
-
-- Fix remaining edge cases in loan processing
-- Resolve UI bugs and styling issues
-- Improve error messages and user feedback
-- Add final performance optimizations"
-git push origin main
-```
-
----
-
-## 🎯 **Final Steps**
-```bash
-# Tag the release
-git tag -a v1.0.0 -m "Release version 1.0.0 - LoanWise MVP"
-git push origin v1.0.0
-```
-
-## 📊 **Tracking Progress**
-
-### **Commit Counter Commands**
-```bash
-# Check total commits
-git log --oneline | wc -l
-
-# Check commits by author name (replace with actual names)
+# Check commits by teammate
 git log --author="Teammate1" --oneline | wc -l
 git log --author="Teammate2" --oneline | wc -l
-
-# Check recent commits
-git log --oneline -10
 ```
 
-## 🎯 **Key Benefits of This Approach**
+#### **Balance Monitoring**
+- **Weekly Check**: Review commit distribution every week
+- **Adjust Strategy**: If imbalance occurs, adjust upcoming commits
+- **Quality Over Quantity**: Ensure meaningful commits, not just count
 
-1. **✅ Simple Workflow**: No branches, no PRs, direct to main
-2. **⚖️ Equal Distribution**: Exactly 20 commits each (40 total)
-3. **🔄 Clear Order**: Sequential execution prevents conflicts
-4. **📝 Meaningful Commits**: Each commit is logical and well-documented
-5. **🚀 Fast Development**: No waiting for PR reviews
-6. **📊 Easy Tracking**: Simple git commands to check progress
+### 🎯 Tips for Equal Distribution
 
-## 💡 **Tips for Success**
+1. **Plan Ahead**: Decide who works on which features before starting
+2. **Use Feature Branches**: Each teammate works on separate features
+3. **Small, Atomic Commits**: Break large features into smaller commits
+4. **Pair Programming**: Alternate who commits during pair sessions
+5. **Documentation Commits**: Use docs/style commits to balance numbers
+6. **Refactoring Opportunities**: Share refactoring tasks equally
 
-1. **Always Pull First**: Use `git pull origin main` before each command
-2. **Coordinate Timing**: Don't work simultaneously to avoid conflicts
-3. **Test Before Push**: Ensure code works before pushing
-4. **Keep It Atomic**: Each commit should be a complete logical unit
-5. **Follow the Order**: Stick to the numbered sequence
+### ⚖️ Balancing Strategies If Uneven
 
-This simplified workflow ensures equal contribution while maintaining clean commit history! 🚀
+#### **If Teammate 1 is Behind:**
+- Take on additional UI polish commits
+- Handle documentation updates
+- Implement additional error handling
+- Add performance optimizations
+
+#### **If Teammate 2 is Behind:**
+- Add more comprehensive testing
+- Implement additional API endpoints
+- Handle edge cases and validations
+- Add data processing features
+
+### 📈 Success Metrics
+
+- **Target**: 20-25 commits each (total ~45-50)
+- **Tolerance**: ±3 commits difference acceptable
+- **Quality Check**: All commits must be meaningful and well-documented
+- **Review Process**: Both teammates must review critical features
+
+## �🚀 Release Strategy
+
+### Version Tagging
+- **Major**: Breaking changes (`v2.0.0`)
+- **Minor**: New features (`v1.1.0`)
+- **Patch**: Bug fixes (`v1.0.1`)
+
+### Release Commits
+```bash
+chore(release): bump version to v1.1.0
+
+- Add voice mode functionality
+- Implement loan application system
+- Improve UI responsiveness
+- Fix chat message clearing issues
+```
+
+## 📝 Tips for Good Commits
+
+1. **Keep commits atomic**: One logical change per commit
+2. **Write descriptive messages**: Explain what and why, not how
+3. **Use present tense**: "Add feature" not "Added feature"
+4. **Reference issues**: Include issue numbers when applicable
+5. **Test before committing**: Ensure code works and tests pass
+6. **Review your changes**: Use `git diff` before committing
+
+This guide ensures consistent, trackable, and professional git history for the LoanWise project!
