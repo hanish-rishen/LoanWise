@@ -7,9 +7,10 @@
     "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
     "strict": true,
-    "noEmit": true,
     "target": "ESNext",
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "declaration": true,
+    "emitDeclarationOnly": true
   },
   "include": ["vite.config.ts", "eslint.config.js"]
 }

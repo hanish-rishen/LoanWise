@@ -27,5 +27,10 @@
     }
   },
   "include": ["src"],
+  "exclude": [
+    "src/components/*_backup.tsx",
+    "src/components/*_broken.tsx",
+    "src/components/*_old.tsx"
+  ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

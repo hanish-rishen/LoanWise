@@ -28,14 +28,14 @@ function App() {
           </SignedOut>
           <SignedIn>
             <div className="h-full flex flex-col">
-              <Header 
+              <Header
                 sidebarOpen={sidebarOpen}
                 setSidebarOpen={setSidebarOpen}
                 currentView={currentView}
                 setCurrentView={setCurrentView}
               />
               <div className="flex-1 flex overflow-hidden">
-                <Sidebar 
+                <Sidebar
                   isOpen={sidebarOpen}
                   setIsOpen={setSidebarOpen}
                   currentView={currentView}
@@ -44,17 +44,17 @@ function App() {
                 <main className="flex-1 overflow-hidden">
                   <Routes>
                     <Route path="/" element={<Navigate to="/chat" replace />} />
-                    <Route 
-                      path="/chat" 
-                      element={<ChatInterface />} 
+                    <Route
+                      path="/chat"
+                      element={<ChatInterface />}
                     />
-                    <Route 
-                      path="/voice" 
-                      element={<VoiceMode />} 
+                    <Route
+                      path="/voice"
+                      element={<VoiceMode />}
                     />
-                    <Route 
-                      path="/applications" 
-                      element={<LoanApplicationsPage />} 
+                    <Route
+                      path="/applications"
+                      element={<LoanApplicationsPage />}
                     />
                   </Routes>
                 </main>

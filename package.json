@@ -6,11 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "type-check": "tsc --skipLibCheck --noEmit",
+    "type-check": "tsc --project tsconfig.build.json --skipLibCheck --noEmit",
     "lint": "eslint . --max-warnings=20",
     "lint:fix": "eslint . --fix",
     "preview": "vite preview",
-    "tsc": "tsc --noEmit --skipLibCheck"
+    "tsc": "tsc --project tsconfig.build.json --noEmit --skipLibCheck"
   },
   "dependencies": {
     "@clerk/clerk-react": "^4.30.0",
@@ -33,6 +33,7 @@
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "^4.50.0",
     "@types/react": "^18.2.55",
     "@types/react-dom": "^18.2.19",
     "@typescript-eslint/eslint-plugin": "^6.21.0",

@@ -5,18 +5,18 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
-  { 
+  {
     ignores: [
-      'dist', 
-      '.vite', 
-      'node_modules', 
-      '**/Sidebar_broken.tsx', 
-      '**/Sidebar_old.tsx', 
+      'dist',
+      '.vite',
+      'node_modules',
+      '**/Sidebar_broken.tsx',
+      '**/Sidebar_old.tsx',
       '**/LoanApplicationsPage_backup.tsx',
       '**/ChatInterface_new.tsx',
       '**/VoiceMode_clean.tsx',
       '**/VoiceMode_new.tsx'
-    ] 
+    ]
   },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
