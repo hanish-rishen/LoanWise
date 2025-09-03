@@ -1,0 +1,10 @@
+# Ignore backup and broken files that have syntax errors
+src/components/*_backup.tsx
+src/components/*_broken.tsx
+src/components/*_old.tsx
+src/dbOperations_broken.ts
+
+# Build artifacts
+dist/
+.vite/
+node_modules/
