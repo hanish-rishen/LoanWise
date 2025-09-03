@@ -1,10 +1,11 @@
 import { BarChart3, MessageCircle } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
-// Define props type with Record<never, never> for an empty object that satisfies TypeScript
-type HeaderProps = Record<never, never>;
+interface HeaderProps {
+  // Props can be added here if needed in the future
+}
 
-export default function Header(_props: HeaderProps) {
+export default function Header({}: HeaderProps) {
   const navigate = useNavigate();
   const location = useLocation();
 
