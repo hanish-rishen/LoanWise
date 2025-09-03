@@ -1,0 +1,53 @@
+# Auto-labeling configuration
+# Labels PRs based on which files are changed
+
+frontend:
+  - src/**/*
+  - public/**/*
+  - index.html
+  - vite.config.ts
+
+backend:
+  - "*.js"
+  - database-schema.sql
+  - setup-db.js
+  - check-tables.js
+
+database:
+  - database-schema.sql
+  - src/schema.ts
+  - src/db*.ts
+  - "**/db*.ts"
+
+api:
+  - src/services/**/*
+  - src/dbOperations*.ts
+
+ui/ux:
+  - src/components/**/*
+  - src/index.css
+  - tailwind.config.js
+  - postcss.config.js
+
+configuration:
+  - "*.config.*"
+  - ".*rc*"
+  - ".env*"
+  - package.json
+  - tsconfig*.json
+
+documentation:
+  - "**/*.md"
+  - docs/**/*
+
+tests:
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - test-*.js
+
+dependencies:
+  - package.json
+  - package-lock.json
+
+workflows:
+  - .github/**/*
