@@ -2,96 +2,68 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  -webkit-text-size-adjust: 100%;
+/* Hide Clerk branding */
+.cl-footer,
+.cl-footerAction,
+.cl-footerActionText,
+.cl-footerPages,
+.cl-footerActionLink[href*="clerk.com"],
+.cl-internal-b3fm6y {
+  display: none !important;
 }
 
-body {
+/* Hide any "Powered by" text */
+[data-testid="footer"],
+[class*="footer"] {
+  display: none !important;
+}
+
+/* Clean up the login form */
+.cl-card {
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+/* Ensure proper layout sizing */
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
   margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  padding: 0;
 }
 
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+/* Fix container sizing issues */
+.h-screen {
+  height: 100vh !important;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
+.h-full {
+  height: 100% !important;
 }
 
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
+/* Prevent overflow issues */
+.overflow-hidden {
+  overflow: hidden !important;
 }
 
-::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
+.overflow-y-auto {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
-}
+/* Compact layout adjustments - Force smaller sizing */
+.text-4xl { font-size: 1.5rem !important; line-height: 2rem !important; }
+.text-3xl { font-size: 1.25rem !important; line-height: 1.75rem !important; }
+.text-2xl { font-size: 1.125rem !important; line-height: 1.5rem !important; }
+.text-xl { font-size: 1rem !important; line-height: 1.5rem !important; }
+.text-lg { font-size: 0.875rem !important; line-height: 1.25rem !important; }
 
-/* Voice mode animations */
-@keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-}
+/* Reduce spacing */
+.space-y-8 > * + * { margin-top: 1rem !important; }
+.space-y-6 > * + * { margin-top: 0.75rem !important; }
+.space-y-4 > * + * { margin-top: 0.5rem !important; }
 
-.pulse-animation {
-  animation: pulse 2s infinite;
-}
-
-/* Message animations */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.message-fade-in {
-  animation: fadeInUp 0.3s ease-out;
-}
-
-/* Sidebar animations */
-@keyframes slideIn {
-  from { transform: translateX(-100%); }
-  to { transform: translateX(0); }
-}
-
-@keyframes slideOut {
-  from { transform: translateX(0); }
-  to { transform: translateX(-100%); }
-}
-
-.sidebar-slide-in {
-  animation: slideIn 0.3s ease-out;
-}
-
-.sidebar-slide-out {
-  animation: slideOut 0.3s ease-out;
-}
+.p-8 { padding: 1rem !important; }
+.p-6 { padding: 0.75rem !important; }
+.py-8 { padding-top: 1rem !important; padding-bottom: 1rem !important; }
+.py-6 { padding-top: 0.75rem !important; padding-bottom: 0.75rem !important; }
