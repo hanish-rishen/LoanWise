@@ -19,8 +19,8 @@ export default function LoginPage() {
           <SignIn
             routing="path"
             path="/login"
-            redirectUrl="/voice"
-            fallbackRedirectUrl="/voice"
+            redirectUrl="/"
+            fallbackRedirectUrl="/"
             signUpUrl="/login"
             appearance={{
               baseTheme: undefined,

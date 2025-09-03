@@ -107,7 +107,7 @@ function App() {
           )
         } />
         <Route path="/loan-applications" element={userId ? <LoanApplicationsPage /> : <Navigate to="/login" replace />} />
-        <Route path="/" element={<Navigate to="/chat" replace />} />
+        <Route path="/" element={<Navigate to="/voice" replace />} />
       </Routes>
       <ToastContainer />
     </>
