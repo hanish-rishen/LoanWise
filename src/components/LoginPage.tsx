@@ -19,8 +19,8 @@ export default function LoginPage() {
           <SignIn
             routing="path"
             path="/login"
-            redirectUrl="/chat"
-            fallbackRedirectUrl="/chat"
+            redirectUrl="/voice"
+            fallbackRedirectUrl="/voice"
             signUpUrl="/login"
             appearance={{
               baseTheme: undefined,
@@ -43,13 +43,22 @@ export default function LoginPage() {
                 dividerLine: 'bg-gray-600',
                 dividerText: 'text-gray-400',
                 socialButtonsBlockButton: 'bg-gray-700 hover:bg-gray-600 border-gray-600',
-                socialButtonsBlockButtonText: 'text-white'
+                socialButtonsBlockButtonText: 'text-white',
+                footer: 'hidden',
+                footerAction: 'hidden',
+                footerActionText: 'hidden',
+                footerPages: 'hidden'
               }
             }}
           />
         </div>
 
-        <div className="mt-8 text-center text-xs text-gray-500">
+        {/* Secured by Clerk text */}
+        <div className="mt-4 text-center text-xs text-gray-400">
+          <p>Secured by Clerk</p>
+        </div>
+
+        <div className="mt-4 text-center text-xs text-gray-500">
           <p>© 2024 LoanWise. All rights reserved.</p>
         </div>
       </div>
