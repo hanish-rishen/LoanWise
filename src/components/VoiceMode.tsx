@@ -36,7 +36,6 @@ const VoiceMode = forwardRef<VoiceModeRef>((_, ref) => {
   const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice | null>(null);
   const [currentLoanData, setCurrentLoanData] = useState<any>({});
   const [submittedApplicationId, setSubmittedApplicationId] = useState<string | null>(null);
-  const [isResetting, setIsResetting] = useState(false);
 
   // Editing states
   const [editingField, setEditingField] = useState<string | null>(null);
@@ -141,6 +140,42 @@ const VoiceMode = forwardRef<VoiceModeRef>((_, ref) => {
 
     fetchMessages();
   }, [user?.id, currentConversationId]);
+
+  // Handle conversation deletion events
+  useEffect(() => {
+    const handleConversationDeleted = (event: CustomEvent) => {
+      const { conversationId } = event.detail;
+      console.log('🎤 VoiceMode: Conversation deleted event received:', conversationId);
+
+      // If current conversation was deleted, clear the interface
+      if (conversationId === currentConversationId) {
+        console.log('🎤 VoiceMode: Current conversation deleted, clearing interface');
+        setMessages([]);
+        setCurrentLoanData({});
+        setSubmittedApplicationId(null);
+        // Don't create new conversation here - let user start fresh
+        sessionStorage.removeItem('currentConversationId');
+        setCurrentConversationId('');
+      }
+    };
+
+    const handleAllConversationsCleared = () => {
+      console.log('🎤 VoiceMode: All conversations cleared event received');
+      setMessages([]);
+      setCurrentLoanData({});
+      setSubmittedApplicationId(null);
+      sessionStorage.removeItem('currentConversationId');
+      setCurrentConversationId('');
+    };
+
+    window.addEventListener('conversationDeleted', handleConversationDeleted as EventListener);
+    window.addEventListener('allConversationsCleared', handleAllConversationsCleared);
+
+    return () => {
+      window.removeEventListener('conversationDeleted', handleConversationDeleted as EventListener);
+      window.removeEventListener('allConversationsCleared', handleAllConversationsCleared);
+    };
+  }, [currentConversationId]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -598,21 +633,21 @@ const VoiceMode = forwardRef<VoiceModeRef>((_, ref) => {
       </div>
 
       {/* Three Column Layout - Wider Side Panels */}
-      <div className="relative z-10 flex-1 flex py-8 w-full min-h-0">
+      <div className="relative z-10 flex-1 flex py-4 w-full min-h-0">
 
         {/* Left Panel - Transcription */}
-        <div className="w-2/5 flex flex-col pl-8 pr-4 min-h-0">
+        <div className="w-2/5 flex flex-col pl-4 pr-2 min-h-0">
           <div className="relative flex-1 min-h-0">
             <div className="absolute inset-0 bg-gradient-to-r from-green-400/10 via-transparent to-green-400/10 rounded-2xl blur-xl"></div>
-            <div className="relative bg-gray-900/60 backdrop-blur-2xl border border-green-400/20 rounded-2xl p-6 shadow-2xl h-full flex flex-col min-h-0">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center space-x-3">
-                  <div className={`w-3 h-3 rounded-full ${
+            <div className="relative bg-gray-900/60 backdrop-blur-2xl border border-green-400/20 rounded-xl p-4 shadow-2xl h-full flex flex-col min-h-0">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-2">
+                  <div className={`w-2 h-2 rounded-full ${
                     currentTranscript ? 'bg-green-400 animate-pulse' : 'bg-gray-500'
                   }`}></div>
-                  <span className="text-green-300 text-lg font-medium tracking-wide">TRANSCRIPTION</span>
+                  <span className="text-green-300 text-sm font-medium tracking-wide">TRANSCRIPTION</span>
                 </div>
-                <div className="text-sm text-gray-400 font-mono">
+                <div className="text-xs text-gray-400 font-mono">
                   {isListening ? 'LIVE' : 'STANDBY'}
                 </div>
               </div>
@@ -708,23 +743,23 @@ const VoiceMode = forwardRef<VoiceModeRef>((_, ref) => {
         </div>
 
         {/* Center - Main Voice Interface */}
-        <div className="w-1/5 flex flex-col items-center justify-center space-y-12 px-4">
+        <div className="w-1/5 flex flex-col items-center justify-center space-y-6 px-2">
 
           {/* Advanced Audio Visualizer */}
           <div className="relative">
             {/* Outer Ring Animation */}
-            <div className={`absolute -inset-20 rounded-full border border-green-400/20 transition-all duration-1000 ${
+            <div className={`absolute -inset-12 rounded-full border border-green-400/20 transition-all duration-1000 ${
               isListening ? 'animate-spin-slow scale-110' : 'scale-100'
             }`}></div>
-            <div className={`absolute -inset-16 rounded-full border border-green-400/30 transition-all duration-700 ${
+            <div className={`absolute -inset-8 rounded-full border border-green-400/30 transition-all duration-700 ${
               isListening ? 'animate-pulse scale-105' : 'scale-100'
             }`}></div>
 
             {/* Central Audio Bars Container */}
-            <div className="relative w-32 h-32 rounded-full bg-gradient-to-br from-gray-900/80 via-gray-800/60 to-gray-900/80 backdrop-blur-xl border border-green-400/20 flex items-center justify-center shadow-2xl">
+            <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-gray-900/80 via-gray-800/60 to-gray-900/80 backdrop-blur-xl border border-green-400/20 flex items-center justify-center shadow-2xl">
 
               {/* Glowing Center */}
-              <div className={`absolute inset-8 rounded-full blur-lg transition-all duration-500 ${
+              <div className={`absolute inset-4 rounded-full blur-lg transition-all duration-500 ${
                 isListening ? 'bg-green-400/60 animate-pulse' :
                 isSpeaking ? 'bg-blue-400/60 animate-pulse' :
                 isProcessing ? 'bg-yellow-400/60 animate-pulse' :
@@ -732,61 +767,63 @@ const VoiceMode = forwardRef<VoiceModeRef>((_, ref) => {
               }`}></div>
 
               {/* Audio Bars */}
-              <div className="relative flex items-end space-x-1 h-12">
+              <div className="relative flex items-end space-x-0.5 h-8">
                 {isListening ? (
                   <>
-                    <div className="w-1 bg-gradient-to-t from-green-600 to-green-300 rounded-full shadow-lg shadow-green-400/50 animate-bounce" style={{height: '16px', animationDelay: '0ms'}}></div>
-                    <div className="w-1 bg-gradient-to-t from-green-600 to-green-300 rounded-full shadow-lg shadow-green-400/50 animate-bounce" style={{height: '28px', animationDelay: '100ms'}}></div>
-                    <div className="w-1 bg-gradient-to-t from-green-600 to-green-300 rounded-full shadow-lg shadow-green-400/50 animate-bounce" style={{height: '12px', animationDelay: '200ms'}}></div>
-                    <div className="w-1 bg-gradient-to-t from-green-600 to-green-300 rounded-full shadow-lg shadow-green-400/50 animate-bounce" style={{height: '36px', animationDelay: '300ms'}}></div>
-                    <div className="w-1 bg-gradient-to-t from-green-600 to-green-300 rounded-full shadow-lg shadow-green-400/50 animate-bounce" style={{height: '20px', animationDelay: '400ms'}}></div>
-                    <div className="w-1 bg-gradient-to-t from-green-600 to-green-300 rounded-full shadow-lg shadow-green-400/50 animate-bounce" style={{height: '32px', animationDelay: '500ms'}}></div>
-                    <div className="w-1 bg-gradient-to-t from-green-600 to-green-300 rounded-full shadow-lg shadow-green-400/50 animate-bounce" style={{height: '24px', animationDelay: '600ms'}}></div>
-                    <div className="w-1 bg-gradient-to-t from-green-600 to-green-300 rounded-full shadow-lg shadow-green-400/50 animate-bounce" style={{height: '40px', animationDelay: '700ms'}}></div>
-                    <div className="w-1 bg-gradient-to-t from-green-600 to-green-300 rounded-full shadow-lg shadow-green-400/50 animate-bounce" style={{height: '16px', animationDelay: '800ms'}}></div>
+                    <div className="w-0.5 bg-gradient-to-t from-green-600 to-green-300 rounded-full shadow-lg shadow-green-400/50 animate-bounce" style={{height: '10px', animationDelay: '0ms'}}></div>
+                    <div className="w-0.5 bg-gradient-to-t from-green-600 to-green-300 rounded-full shadow-lg shadow-green-400/50 animate-bounce" style={{height: '18px', animationDelay: '100ms'}}></div>
+                    <div className="w-0.5 bg-gradient-to-t from-green-600 to-green-300 rounded-full shadow-lg shadow-green-400/50 animate-bounce" style={{height: '8px', animationDelay: '200ms'}}></div>
+                    <div className="w-0.5 bg-gradient-to-t from-green-600 to-green-300 rounded-full shadow-lg shadow-green-400/50 animate-bounce" style={{height: '24px', animationDelay: '300ms'}}></div>
+                    <div className="w-0.5 bg-gradient-to-t from-green-600 to-green-300 rounded-full shadow-lg shadow-green-400/50 animate-bounce" style={{height: '12px', animationDelay: '400ms'}}></div>
+                    <div className="w-0.5 bg-gradient-to-t from-green-600 to-green-300 rounded-full shadow-lg shadow-green-400/50 animate-bounce" style={{height: '20px', animationDelay: '500ms'}}></div>
+                    <div className="w-0.5 bg-gradient-to-t from-green-600 to-green-300 rounded-full shadow-lg shadow-green-400/50 animate-bounce" style={{height: '16px', animationDelay: '600ms'}}></div>
+                    <div className="w-0.5 bg-gradient-to-t from-green-600 to-green-300 rounded-full shadow-lg shadow-green-400/50 animate-bounce" style={{height: '28px', animationDelay: '700ms'}}></div>
+                    <div className="w-0.5 bg-gradient-to-t from-green-600 to-green-300 rounded-full shadow-lg shadow-green-400/50 animate-bounce" style={{height: '10px', animationDelay: '800ms'}}></div>
                   </>
                 ) : isSpeaking ? (
                   <>
-                    <div className="w-1 bg-gradient-to-t from-blue-600 to-blue-300 rounded-full shadow-lg shadow-blue-400/50 animate-pulse" style={{height: '20px', animationDelay: '0ms'}}></div>
-                    <div className="w-1 bg-gradient-to-t from-blue-600 to-blue-300 rounded-full shadow-lg shadow-blue-400/50 animate-pulse" style={{height: '32px', animationDelay: '50ms'}}></div>
-                    <div className="w-1 bg-gradient-to-t from-blue-600 to-blue-300 rounded-full shadow-lg shadow-blue-400/50 animate-pulse" style={{height: '16px', animationDelay: '100ms'}}></div>
-                    <div className="w-1 bg-gradient-to-t from-blue-600 to-blue-300 rounded-full shadow-lg shadow-blue-400/50 animate-pulse" style={{height: '28px', animationDelay: '150ms'}}></div>
-                    <div className="w-1 bg-gradient-to-t from-blue-600 to-blue-300 rounded-full shadow-lg shadow-blue-400/50 animate-pulse" style={{height: '24px', animationDelay: '200ms'}}></div>
-                    <div className="w-1 bg-gradient-to-t from-blue-600 to-blue-300 rounded-full shadow-lg shadow-blue-400/50 animate-pulse" style={{height: '36px', animationDelay: '250ms'}}></div>
-                    <div className="w-1 bg-gradient-to-t from-blue-600 to-blue-300 rounded-full shadow-lg shadow-blue-400/50 animate-pulse" style={{height: '20px', animationDelay: '300ms'}}></div>
-                    <div className="w-1 bg-gradient-to-t from-blue-600 to-blue-300 rounded-full shadow-lg shadow-blue-400/50 animate-pulse" style={{height: '32px', animationDelay: '350ms'}}></div>
-                    <div className="w-1 bg-gradient-to-t from-blue-600 to-blue-300 rounded-full shadow-lg shadow-blue-400/50 animate-pulse" style={{height: '16px', animationDelay: '400ms'}}></div>
+                    <div className="w-0.5 bg-gradient-to-t from-blue-600 to-blue-300 rounded-full shadow-lg shadow-blue-400/50 animate-pulse" style={{height: '8px', animationDelay: '0ms'}}></div>
+                    <div className="w-0.5 bg-gradient-to-t from-blue-600 to-blue-300 rounded-full shadow-lg shadow-blue-400/50 animate-pulse" style={{height: '20px', animationDelay: '50ms'}}></div>
+                    <div className="w-0.5 bg-gradient-to-t from-blue-600 to-blue-300 rounded-full shadow-lg shadow-blue-400/50 animate-pulse" style={{height: '10px', animationDelay: '100ms'}}></div>
+                    <div className="w-0.5 bg-gradient-to-t from-blue-600 to-blue-300 rounded-full shadow-lg shadow-blue-400/50 animate-pulse" style={{height: '18px', animationDelay: '150ms'}}></div>
+                    <div className="w-0.5 bg-gradient-to-t from-blue-600 to-blue-300 rounded-full shadow-lg shadow-blue-400/50 animate-pulse" style={{height: '15px', animationDelay: '200ms'}}></div>
+                    <div className="w-0.5 bg-gradient-to-t from-blue-600 to-blue-300 rounded-full shadow-lg shadow-blue-400/50 animate-pulse" style={{height: '22px', animationDelay: '250ms'}}></div>
+                    <div className="w-0.5 bg-gradient-to-t from-blue-600 to-blue-300 rounded-full shadow-lg shadow-blue-400/50 animate-pulse" style={{height: '12px', animationDelay: '300ms'}}></div>
+                    <div className="w-0.5 bg-gradient-to-t from-blue-600 to-blue-300 rounded-full shadow-lg shadow-blue-400/50 animate-pulse" style={{height: '20px', animationDelay: '350ms'}}></div>
+                    <div className="w-0.5 bg-gradient-to-t from-blue-600 to-blue-300 rounded-full shadow-lg shadow-blue-400/50 animate-pulse" style={{height: '10px', animationDelay: '400ms'}}></div>
                   </>
                 ) : (
                   <>
-                    <div className="w-1 bg-gradient-to-t from-gray-600 to-gray-400 rounded-full opacity-30" style={{height: '8px'}}></div>
-                    <div className="w-1 bg-gradient-to-t from-gray-600 to-gray-400 rounded-full opacity-30" style={{height: '12px'}}></div>
-                    <div className="w-1 bg-gradient-to-t from-gray-600 to-gray-400 rounded-full opacity-30" style={{height: '6px'}}></div>
-                    <div className="w-1 bg-gradient-to-t from-gray-600 to-gray-400 rounded-full opacity-30" style={{height: '16px'}}></div>
-                    <div className="w-1 bg-gradient-to-t from-gray-600 to-gray-400 rounded-full opacity-30" style={{height: '10px'}}></div>
-                    <div className="w-1 bg-gradient-to-t from-gray-600 to-gray-400 rounded-full opacity-30" style={{height: '14px'}}></div>
-                    <div className="w-1 bg-gradient-to-t from-gray-600 to-gray-400 rounded-full opacity-30" style={{height: '8px'}}></div>
-                    <div className="w-1 bg-gradient-to-t from-gray-600 to-gray-400 rounded-full opacity-30" style={{height: '18px'}}></div>
-                    <div className="w-1 bg-gradient-to-t from-gray-600 to-gray-400 rounded-full opacity-30" style={{height: '6px'}}></div>
+                    <div className="w-0.5 bg-gradient-to-t from-gray-600 to-gray-400 rounded-full opacity-30" style={{height: '5px'}}></div>
+                    <div className="w-0.5 bg-gradient-to-t from-gray-600 to-gray-400 rounded-full opacity-30" style={{height: '8px'}}></div>
+                    <div className="w-0.5 bg-gradient-to-t from-gray-600 to-gray-400 rounded-full opacity-30" style={{height: '4px'}}></div>
+                    <div className="w-0.5 bg-gradient-to-t from-gray-600 to-gray-400 rounded-full opacity-30" style={{height: '10px'}}></div>
+                    <div className="w-0.5 bg-gradient-to-t from-gray-600 to-gray-400 rounded-full opacity-30" style={{height: '6px'}}></div>
+                    <div className="w-0.5 bg-gradient-to-t from-gray-600 to-gray-400 rounded-full opacity-30" style={{height: '9px'}}></div>
+                    <div className="w-0.5 bg-gradient-to-t from-gray-600 to-gray-400 rounded-full opacity-30" style={{height: '5px'}}></div>
+                    <div className="w-0.5 bg-gradient-to-t from-gray-600 to-gray-400 rounded-full opacity-30" style={{height: '12px'}}></div>
+                    <div className="w-0.5 bg-gradient-to-t from-gray-600 to-gray-400 rounded-full opacity-30" style={{height: '4px'}}></div>
                   </>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Futuristic Status Display */}
-          <div className="text-center space-y-6">
+          {/* Futuristic Status Display - Updated for smaller size */}
+          <div className="text-center space-y-4">
             <div className="relative">
-              <h2 className={`text-4xl font-extralight tracking-wider transition-all duration-700 ${
+              <h2 className={`text-2xl font-extralight tracking-wider transition-all duration-700 ${
                 isListening ? 'text-green-300 animate-pulse' :
                 isSpeaking ? 'text-blue-300 animate-pulse' :
                 isProcessing ? 'text-yellow-300 animate-pulse' :
                 'text-white/90'
               }`} style={{
-                textShadow: isListening ? '0 0 20px rgba(34, 197, 94, 0.5)' :
-                           isSpeaking ? '0 0 20px rgba(59, 130, 246, 0.5)' :
-                           isProcessing ? '0 0 20px rgba(251, 191, 36, 0.5)' :
-                           '0 0 10px rgba(255, 255, 255, 0.3)'
+                fontSize: '1.25rem',
+                lineHeight: '1.75rem',
+                textShadow: isListening ? '0 0 15px rgba(34, 197, 94, 0.5)' :
+                           isSpeaking ? '0 0 15px rgba(59, 130, 246, 0.5)' :
+                           isProcessing ? '0 0 15px rgba(251, 191, 36, 0.5)' :
+                           '0 0 8px rgba(255, 255, 255, 0.3)'
               }}>
                 {isListening ? 'LISTENING' :
                  isSpeaking ? 'SPEAKING' :
@@ -794,64 +831,64 @@ const VoiceMode = forwardRef<VoiceModeRef>((_, ref) => {
                  'READY'}
               </h2>
 
-              <div className={`h-0.5 mx-auto mt-4 transition-all duration-700 ${
-                isListening ? 'w-32 bg-gradient-to-r from-transparent via-green-400 to-transparent animate-pulse' :
-                isSpeaking ? 'w-32 bg-gradient-to-r from-transparent via-blue-400 to-transparent animate-pulse' :
-                isProcessing ? 'w-32 bg-gradient-to-r from-transparent via-yellow-400 to-transparent animate-pulse' :
-                'w-16 bg-gradient-to-r from-transparent via-white/30 to-transparent'
+              <div className={`h-0.5 mx-auto mt-3 transition-all duration-700 ${
+                isListening ? 'w-24 bg-gradient-to-r from-transparent via-green-400 to-transparent animate-pulse' :
+                isSpeaking ? 'w-24 bg-gradient-to-r from-transparent via-blue-400 to-transparent animate-pulse' :
+                isProcessing ? 'w-24 bg-gradient-to-r from-transparent via-yellow-400 to-transparent animate-pulse' :
+                'w-12 bg-gradient-to-r from-transparent via-white/30 to-transparent'
               }`}></div>
             </div>
           </div>
 
           {/* Control Interface */}
-          <div className="flex flex-col items-center space-y-8">
+          <div className="flex flex-col items-center space-y-4">
             <div className="relative">
               {isListening && (
                 <>
-                  <div className="absolute -inset-8 rounded-full border border-green-400/30 animate-ping"></div>
-                  <div className="absolute -inset-12 rounded-full border border-green-400/20 animate-ping" style={{animationDelay: '0.5s'}}></div>
-                  <div className="absolute -inset-16 rounded-full border border-green-400/10 animate-ping" style={{animationDelay: '1s'}}></div>
+                  <div className="absolute -inset-6 rounded-full border border-green-400/30 animate-ping"></div>
+                  <div className="absolute -inset-8 rounded-full border border-green-400/20 animate-ping" style={{animationDelay: '0.5s'}}></div>
+                  <div className="absolute -inset-10 rounded-full border border-green-400/10 animate-ping" style={{animationDelay: '1s'}}></div>
                 </>
               )}
 
               <button
                 onClick={isListening ? stopListening : startListening}
                 disabled={isSpeaking || isProcessing}
-                className={`relative w-24 h-24 rounded-full transition-all duration-500 transform hover:scale-110 active:scale-95 ${
+                className={`relative w-16 h-16 rounded-full transition-all duration-500 transform hover:scale-110 active:scale-95 ${
                   isListening
                     ? 'bg-gradient-to-br from-green-500 via-green-400 to-green-600 shadow-2xl shadow-green-500/50'
                     : 'bg-gradient-to-br from-green-500 via-green-400 to-green-600 hover:from-green-400 hover:via-green-300 hover:to-green-500 shadow-xl shadow-green-500/30'
                 }`} style={{
-                  boxShadow: isListening ? '0 0 40px rgba(34, 197, 94, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.2)' :
-                            '0 0 20px rgba(34, 197, 94, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.2)'
+                  boxShadow: isListening ? '0 0 30px rgba(34, 197, 94, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.2)' :
+                            '0 0 15px rgba(34, 197, 94, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.2)'
                 }}
               >
-                <div className="absolute inset-2 rounded-full bg-gradient-to-br from-white/20 to-transparent"></div>
+                <div className="absolute inset-1 rounded-full bg-gradient-to-br from-white/20 to-transparent"></div>
 
                 <div className="relative flex items-center justify-center w-full h-full">
                   {isListening ? (
-                    <Square size={32} className="text-white drop-shadow-lg" />
+                    <Square size={20} className="text-white drop-shadow-lg" />
                   ) : (
-                    <Mic size={32} className="text-white drop-shadow-lg" />
+                    <Mic size={20} className="text-white drop-shadow-lg" />
                   )}
                 </div>
 
                 {isProcessing && (
-                  <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-white animate-spin"></div>
+                  <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-white animate-spin"></div>
                 )}
               </button>
             </div>
 
-            <div className="flex items-center space-x-6">
+            <div className="flex items-center space-x-4">
               <button
                 onClick={stopVoiceMode}
-                className="group relative px-8 py-3 bg-gradient-to-r from-red-600/20 via-red-500/20 to-red-600/20 backdrop-blur-xl border border-red-500/40 rounded-full text-red-300 hover:text-red-100 hover:border-red-400/70 transition-all duration-500 overflow-hidden transform hover:scale-105 active:scale-95"
+                className="group relative px-6 py-2 bg-gradient-to-r from-red-600/20 via-red-500/20 to-red-600/20 backdrop-blur-xl border border-red-500/40 rounded-full text-red-300 hover:text-red-100 hover:border-red-400/70 transition-all duration-500 overflow-hidden transform hover:scale-105 active:scale-95 text-sm"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-red-600/30 via-red-500/30 to-red-600/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                 <div className="absolute inset-0 rounded-full shadow-lg shadow-red-500/20 group-hover:shadow-red-500/40 transition-shadow duration-500"></div>
                 <span className="relative font-bold tracking-wider text-sm" style={{
                   textShadow: '0 0 10px rgba(239, 68, 68, 0.5)'
-                }}>⚡ TERMINATE ⚡</span>
+                }}>⚡ TERMINATE</span>
               </button>
             </div>
           </div>
@@ -871,30 +908,10 @@ const VoiceMode = forwardRef<VoiceModeRef>((_, ref) => {
                   <h3 className="text-white/95 text-lg font-medium">
                     {submittedApplicationId ? 'APPLICATION SUBMITTED!' : 'CURRENT APPLICATION'}
                   </h3>
-                  {submittedApplicationId ? (
+                  {submittedApplicationId && (
                     <div className="bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-sm">
                       ✓ SUCCESS
                     </div>
-                  ) : (
-                    <button
-                      onClick={async () => {
-                        try {
-                          setIsResetting(true);
-                          loanApplicationService.clearFlow(currentConversationId);
-                          setCurrentLoanData({});
-                          setManuallyEditedFields(new Set());
-                          setSubmittedApplicationId(null);
-                          setTimeout(() => setIsResetting(false), 500);
-                        } catch (error) {
-                          console.error('❌ Error during reset:', error);
-                          setIsResetting(false);
-                        }
-                      }}
-                      disabled={isResetting}
-                      className="px-3 py-1 bg-red-500/20 text-red-400 border border-red-400/30 rounded-lg text-sm hover:bg-red-500/30 transition-colors disabled:opacity-50"
-                    >
-                      {isResetting ? 'RESETTING...' : 'RESET'}
-                    </button>
                   )}
                 </div>
 
