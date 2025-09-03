@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Search, Filter, Eye, DollarSign, User, CheckCircle, Clock, XCircle, AlertCircle, Plus, Edit, FileText } from 'lucide-react';
+import { ArrowLeft, Search, Filter, Eye, DollarSign, User, CheckCircle, Clock, XCircle, AlertCircle, Edit, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '@clerk/clerk-react';
 import { db } from '../db';
@@ -138,6 +138,11 @@ export default function LoanApplicationsPage() {
                          app.id.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || app.status === statusFilter;
     return matchesSearch && matchesStatus;
+  }).sort((a, b) => {
+    // Sort by application date - latest first
+    const dateA = new Date(a.application_date);
+    const dateB = new Date(b.application_date);
+    return dateB.getTime() - dateA.getTime();
   });
 
   const formatCurrency = (amount: string | number) => {
@@ -171,6 +176,28 @@ export default function LoanApplicationsPage() {
     });
   };
 
+  const getApplicationAge = (date: Date | string) => {
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - dateObj.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 1) return 'Today';
+    if (diffDays === 2) return 'Yesterday';
+    if (diffDays <= 7) return `${diffDays - 1} days ago`;
+    if (diffDays <= 30) return `${Math.ceil((diffDays - 1) / 7)} week${Math.ceil((diffDays - 1) / 7) > 1 ? 's' : ''} ago`;
+    if (diffDays <= 365) return `${Math.ceil((diffDays - 1) / 30)} month${Math.ceil((diffDays - 1) / 30) > 1 ? 's' : ''} ago`;
+    return `${Math.ceil((diffDays - 1) / 365)} year${Math.ceil((diffDays - 1) / 365) > 1 ? 's' : ''} ago`;
+  };
+
+  const isRecentApplication = (date: Date | string) => {
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - dateObj.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays <= 3; // Applications within 3 days are considered "recent"
+  };
+
   if (!db) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
@@ -188,42 +215,43 @@ export default function LoanApplicationsPage() {
     const isIncomplete = isApplicationIncomplete(selectedApplication);
 
     return (
-      <div className="min-h-screen bg-gray-900 text-white p-6">
-        <div className="max-w-6xl mx-auto">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center">
-              <button
-                onClick={() => setSelectedApplication(null)}
-                className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-all duration-200 mr-4"
-                title="Back to Applications"
-              >
-                <ArrowLeft size={24} />
-              </button>
-              <div>
-                <h1 className="text-3xl font-bold text-white">Application Details</h1>
-                <p className="text-gray-400 mt-1">Application ID: {selectedApplication.id}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-3">
-              {isIncomplete && (
+      <div className="min-h-screen bg-gray-900 text-white overflow-y-auto">
+        <div className="max-h-screen overflow-y-auto custom-scrollbar">
+          <div className="max-w-6xl mx-auto p-6">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-8 sticky top-0 bg-gray-900 z-10 py-4">
+              <div className="flex items-center">
                 <button
-                  onClick={() => handleContinueApplication(selectedApplication.id)}
-                  className="flex items-center px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-all duration-200"
+                  onClick={() => setSelectedApplication(null)}
+                  className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-all duration-200 mr-4"
+                  title="Back to Applications"
                 >
-                  <Edit size={20} className="mr-2" />
-                  Continue Application
+                  <ArrowLeft size={24} />
                 </button>
-              )}
-              <div className={`px-4 py-2 rounded-lg text-sm font-medium border ${getStatusColor(selectedApplication.status)}`}>
-                <div className="flex items-center">
-                  {getStatusIcon(selectedApplication.status)}
-                  <span className="ml-2 capitalize">{selectedApplication.status.replace('-', ' ')}</span>
+                <div>
+                  <h1 className="text-3xl font-bold text-white">Application Details</h1>
+                  <p className="text-gray-400 mt-1">Application ID: {selectedApplication.id}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-3">
+                {isIncomplete && (
+                  <button
+                    onClick={() => handleContinueApplication(selectedApplication.id)}
+                    className="flex items-center px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-all duration-200"
+                  >
+                    <Edit size={20} className="mr-2" />
+                    Continue Application
+                  </button>
+                )}
+                <div className={`px-4 py-2 rounded-lg text-sm font-medium border ${getStatusColor(selectedApplication.status)}`}>
+                  <div className="flex items-center">
+                    {getStatusIcon(selectedApplication.status)}
+                    <span className="ml-2 capitalize">{selectedApplication.status.replace('-', ' ')}</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
           {/* Incomplete Application Warning */}
           {isIncomplete && (
@@ -337,6 +365,7 @@ export default function LoanApplicationsPage() {
               <FileText className="text-purple-500 mr-3" size={20} />
               Loan Decision Analysis
             </h3>
+            <div className="max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
             {(() => {
               const analysis = loanApplicationService.analyzeLoanDecision(selectedApplication);
               return (
@@ -387,12 +416,12 @@ export default function LoanApplicationsPage() {
                     </div>
                   )}
 
-                  {/* Risk Factors */}
+                  {/* Disapproval/Risk Factors */}
                   {analysis.rejectionRisks.length > 0 && (
                     <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
                       <h4 className="text-red-400 font-medium mb-2 flex items-center">
-                        <AlertCircle size={16} className="mr-2" />
-                        Risk Factors
+                        <XCircle size={16} className="mr-2" />
+                        Disapproval/Risk Factors
                       </h4>
                       <ul className="space-y-1">
                         {analysis.rejectionRisks.map((risk: string, index: number) => (
@@ -423,11 +452,10 @@ export default function LoanApplicationsPage() {
                     </div>
                   )}
                 </div>
-              );
-            })()}
-          </div>
-
-          {/* Approved Terms Section */}
+                );
+              })()}
+            </div>
+          </div>          {/* Approved Terms Section */}
           {selectedApplication.status === 'approved' && (
             <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-6">
               <h3 className="text-lg font-semibold text-green-400 mb-4 flex items-center">
@@ -446,6 +474,7 @@ export default function LoanApplicationsPage() {
               </div>
             </div>
           )}
+          </div>
         </div>
       </div>
     );
@@ -453,30 +482,24 @@ export default function LoanApplicationsPage() {
 
   // Main Dashboard View
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center">
-            <button
-              onClick={() => navigate('/')}
-              className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-all duration-200 mr-4"
-              title="Back to Dashboard"
-            >
-              <ArrowLeft size={24} />
-            </button>
-            <div>
-              <h1 className="text-3xl font-bold text-white">Loan Applications</h1>
-              <p className="text-gray-400 mt-1">Manage and track your loan applications</p>
+    <div className="min-h-screen bg-gray-900 text-white overflow-y-auto">
+      <div className="max-h-screen overflow-y-auto custom-scrollbar">
+        <div className="max-w-7xl mx-auto p-6">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8 sticky top-0 bg-gray-900 z-10 py-4">
+            <div className="flex items-center">
+              <button
+                onClick={() => navigate('/voice')}
+                className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-all duration-200 mr-4"
+                title="Back to Dashboard"
+              >
+                <ArrowLeft size={24} />
+              </button>
+              <div>
+                <h1 className="text-3xl font-bold text-white">Loan Applications</h1>
+                <p className="text-gray-400 mt-1">Manage and track your loan applications</p>
+              </div>
             </div>
-          </div>
-          <button
-            onClick={() => navigate('/')}
-            className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 transform hover:scale-105"
-          >
-            <Plus size={20} className="mr-2" />
-            New Application
-          </button>
         </div>
 
         {/* Search and Filter */}
@@ -510,19 +533,24 @@ export default function LoanApplicationsPage() {
           </div>
         </div>
 
-        {/* Applications Table */}
-        <div className="bg-gray-800 rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-700">
+        {/* Debug Info */}
+        <div className="mb-4 text-sm text-gray-400">
+          Total Applications: {applications.length} | Filtered: {filteredApplications.length}
+        </div>
+
+        {/* Applications Table with Scroll */}
+        <div className="bg-gray-800 rounded-lg overflow-hidden border border-gray-700">
+          <div className="max-h-[70vh] min-h-[300px] overflow-y-auto overflow-x-hidden custom-scrollbar relative">
+            <table className="w-full table-fixed">
+              <thead className="bg-gray-700 sticky top-0 z-10 border-b border-gray-600">
                 <tr>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-300">Application ID</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-300">Applicant</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-300">Loan Type</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-300">Amount</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-300">Status</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-300">Date</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-300">Actions</th>
+                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 w-32">Application ID</th>
+                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 w-40">Applicant</th>
+                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 w-32">Loan Type</th>
+                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 w-28">Amount</th>
+                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 w-32">Status</th>
+                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 w-28">Date</th>
+                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 w-40">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-700">
@@ -538,7 +566,19 @@ export default function LoanApplicationsPage() {
                         <span className="ml-1 capitalize">{application.status.replace('-', ' ')}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-300">{formatDate(application.application_date)}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center space-x-2">
+                        <div>
+                          <p className="text-sm text-gray-300">{formatDate(application.application_date)}</p>
+                          <p className="text-xs text-gray-500">{getApplicationAge(application.application_date)}</p>
+                        </div>
+                        {isRecentApplication(application.application_date) && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400 border border-blue-400/30">
+                            Latest
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center space-x-2">
                         <button
@@ -584,6 +624,89 @@ export default function LoanApplicationsPage() {
             <p className="text-gray-400 text-lg">No applications found matching your criteria.</p>
           </div>
         )}
+      </div>
+
+      {/* Custom Scrollbar Styles */}
+      <style>
+        {`
+        .custom-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(59, 130, 246, 0.6) rgba(31, 41, 55, 0.3);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 14px;
+          height: 14px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: rgba(31, 41, 55, 0.6);
+          border-radius: 7px;
+          border: 1px solid rgba(55, 65, 81, 0.8);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: linear-gradient(
+            180deg,
+            rgba(59, 130, 246, 0.9) 0%,
+            rgba(59, 130, 246, 0.7) 50%,
+            rgba(59, 130, 246, 0.9) 100%
+          );
+          border-radius: 7px;
+          border: 2px solid rgba(31, 41, 55, 0.6);
+          box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: linear-gradient(
+            180deg,
+            rgba(59, 130, 246, 1) 0%,
+            rgba(59, 130, 246, 0.9) 50%,
+            rgba(59, 130, 246, 1) 100%
+          );
+          box-shadow: 0 0 12px rgba(59, 130, 246, 0.5);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:active {
+          background: linear-gradient(
+            180deg,
+            rgba(37, 99, 235, 1) 0%,
+            rgba(37, 99, 235, 0.8) 50%,
+            rgba(37, 99, 235, 1) 100%
+          );
+          box-shadow: 0 0 16px rgba(37, 99, 235, 0.7);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-corner {
+          background: rgba(31, 41, 55, 0.6);
+        }
+
+        /* Add a subtle shadow to indicate scrollable content */
+        .custom-scrollbar::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 20px;
+          background: linear-gradient(to bottom, rgba(31, 41, 55, 0.8), transparent);
+          pointer-events: none;
+          z-index: 5;
+        }
+
+        .custom-scrollbar::after {
+          content: '';
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 20px;
+          background: linear-gradient(to top, rgba(31, 41, 55, 0.8), transparent);
+          pointer-events: none;
+          z-index: 5;
+        }
+        `}
+      </style>
       </div>
     </div>
   );
