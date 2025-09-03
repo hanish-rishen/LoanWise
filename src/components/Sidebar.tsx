@@ -79,9 +79,12 @@ export default function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
 
     try {
       console.log('🗑️ Sidebar: Deleting conversation:', conversationId);
-      await deleteConversation(conversationId, user.id);
+      await deleteConversation(user.id, conversationId);
       await loadRecentChats();
       console.log('✅ Sidebar: Conversation deleted successfully');
+
+      // Emit an event to notify other components that the conversation was deleted
+      window.dispatchEvent(new CustomEvent('conversationDeleted', { detail: { conversationId } }));
     } catch (error) {
       console.error('❌ Sidebar: Error deleting conversation:', error);
     }
@@ -99,6 +102,9 @@ export default function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
         await loadRecentChats();
         sessionStorage.removeItem('currentConversationId');
         loanApplicationService.clearAllFlows();
+
+        // Emit event to notify other components that all conversations were cleared
+        window.dispatchEvent(new CustomEvent('allConversationsCleared'));
 
         console.log('✅ Sidebar: All chats cleared successfully');
       } catch (error) {
@@ -141,32 +147,34 @@ export default function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
 
       {/* Sidebar with flexbox layout */}
       <div className={`
-        flex-shrink-0 h-screen transition-all duration-500 ease-out
-        ${isCollapsed ? 'w-20' : 'w-80'}
-      `}>
+        flex-shrink-0 h-screen transition-all duration-500 ease-out p-2
+        ${isCollapsed ? 'w-16' : 'w-56'}
+      `} style={{
+        width: isCollapsed ? '4rem' : '14rem'
+      }}>
         <div className={`
-          m-4 rounded-2xl bg-gray-900/95 backdrop-blur-xl
+          rounded-xl bg-gray-900/95 backdrop-blur-xl
           border border-gray-700/50 shadow-2xl shadow-black/30
           flex flex-col transition-all duration-500 ease-out
-          h-[calc(100vh-2rem)]
+          h-[calc(100vh-1rem)]
           relative w-full
         `}>
 
           {/* Header Section */}
-          <div className="flex-shrink-0 p-4 border-b border-gray-700/30">
+          <div className="flex-shrink-0 p-3 border-b border-gray-700/30">
             <div className="flex items-center justify-between">
               {/* Minimal Logo with L + dot */}
               <div className={`
                 flex items-center space-x-3 transition-all duration-300
                 ${isCollapsed ? 'justify-center w-full' : ''}
               `}>
-                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm">
-                  <div className="w-5 h-5 relative">
+                <div className="w-6 h-6 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                  <div className="w-4 h-4 relative">
                     {/* L shape */}
-                    <div className="absolute bottom-0 left-0 w-1 h-4 bg-blue-600 rounded-sm"></div>
-                    <div className="absolute bottom-0 left-0 w-3 h-1 bg-blue-600 rounded-sm"></div>
+                    <div className="absolute bottom-0 left-0 w-0.5 h-3 bg-blue-600 rounded-sm"></div>
+                    <div className="absolute bottom-0 left-0 w-2 h-0.5 bg-blue-600 rounded-sm"></div>
                     {/* Cool dot accent */}
-                    <div className="absolute top-0 right-0 w-1 h-1 bg-blue-600 rounded-full"></div>
+                    <div className="absolute top-0 right-0 w-0.5 h-0.5 bg-blue-600 rounded-full"></div>
                   </div>
                 </div>
 
@@ -175,7 +183,7 @@ export default function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
                   transition-all duration-300 transform
                   ${isCollapsed ? 'opacity-0 scale-95 -translate-x-4' : 'opacity-100 scale-100 translate-x-0'}
                 `}>
-                  <h2 className="text-lg font-semibold text-white">LoanWise</h2>
+                  <h2 className="text-base font-semibold text-white">LoanWise</h2>
                 </div>
               </div>
 
@@ -194,29 +202,31 @@ export default function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
             {isCollapsed && (
               <button
                 onClick={onToggle}
-                className="absolute top-4 -right-3 p-1.5 rounded-full bg-gray-800 border border-gray-600 hover:bg-gray-700 transition-all duration-300 shadow-lg z-10"
+                className="absolute top-3 -right-2 p-1.5 rounded-full bg-blue-600/80 hover:bg-blue-500 border border-blue-400/50 hover:border-blue-300 transition-all duration-300 shadow-lg z-10 group"
+                title="Expand sidebar"
               >
-                <Menu size={14} className="text-gray-300" />
+                <Menu size={14} className="text-white group-hover:scale-110 transition-transform duration-200" />
               </button>
             )}
           </div>
 
           {/* Main Content Area - Takes up remaining space */}
           <div className="flex-1 flex flex-col overflow-hidden">
-            <nav className="p-4 flex flex-col h-full">
+            <nav className="p-3 flex flex-col h-full">
               {/* New Chat Button */}
               <button
                 onClick={handleNewConversation}
                 className={`
-                  w-full p-3 rounded-lg bg-blue-600/20 hover:bg-blue-600/30
+                  w-full p-2 rounded-lg bg-blue-600/20 hover:bg-blue-600/30
                   border border-blue-500/30 hover:border-blue-500/50
-                  flex items-center transition-all duration-300 group mb-4
+                  flex items-center transition-all duration-300 group mb-3 relative
                   ${isCollapsed ? 'justify-center' : 'justify-start'}
                 `}
+                title={isCollapsed ? "New Chat" : ""}
               >
-                <Plus size={18} className="text-blue-400 group-hover:text-blue-300" />
+                <Plus size={16} className="text-blue-400 group-hover:text-blue-300" />
                 <span className={`
-                  ml-3 font-medium text-blue-100 whitespace-nowrap transition-all duration-300
+                  ml-2 font-medium text-blue-100 whitespace-nowrap transition-all duration-300 text-sm
                   ${isCollapsed ? 'opacity-0 scale-95 -translate-x-4' : 'opacity-100 scale-100 translate-x-0'}
                 `}>
                   New Chat
@@ -228,83 +238,88 @@ export default function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
                 flex-1 flex flex-col overflow-hidden transition-all duration-300
                 ${isCollapsed ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}
               `}>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-gray-300">Recent Chats</h3>
-                  {recentChats.length > 0 && (
-                    <button
-                      onClick={handleClearAllChats}
-                      className="p-1 rounded hover:bg-red-500/20 border border-transparent hover:border-red-400/30 transition-all duration-200 group"
-                      title="Clear all chats"
-                    >
-                      <Trash2 size={12} className="text-gray-400 group-hover:text-red-400" />
-                    </button>
-                  )}
-                </div>
+                {!isCollapsed && (
+                  <>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-semibold text-gray-300">Recent Chats</h3>
+                      {recentChats.length > 0 && (
+                        <button
+                          onClick={handleClearAllChats}
+                          className="p-1 rounded hover:bg-red-500/20 border border-transparent hover:border-red-400/30 transition-all duration-200 group"
+                          title="Clear all chats"
+                        >
+                          <Trash2 size={12} className="text-gray-400 group-hover:text-red-400" />
+                        </button>
+                      )}
+                    </div>
 
-                {/* Chat List with borders (outline) and proper scrolling */}
-                <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar-thin">
-                  {recentChats.map((chat) => (
-                    <div key={chat.id} className="group relative">
-                      <button
-                        onClick={() => handleConversationClick(chat.id)}
-                        className="w-full p-3 rounded-lg bg-gray-800/40 hover:bg-gray-700/50
-                                 border border-gray-700/60 hover:border-gray-600/70
-                                 transition-all duration-200 text-left group"
-                      >
-                        <div className="flex items-center justify-between min-w-0">
-                          <div className="flex items-center min-w-0 space-x-3">
-                            <div className="flex-shrink-0 w-2 h-2 rounded-full bg-green-400"></div>
-                            <div className="min-w-0 flex-1">
-                              <div className="text-sm font-medium text-gray-200 truncate">
-                                {chat.summary}
-                              </div>
-                              <div className="flex items-center space-x-2 text-xs text-gray-400 mt-1">
-                                <Clock size={10} />
-                                <span>{formatTimestamp(chat.timestamp)}</span>
-                                <span>•</span>
-                                <span>{chat.messageCount} msgs</span>
-                              </div>
-                            </div>
-                          </div>
-
+                    {/* Chat List with borders (outline) and proper scrolling */}
+                    <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar-thin">
+                      {recentChats.map((chat) => (
+                        <div key={chat.id} className="group relative">
                           <button
-                            onClick={(e) => handleDeleteConversation(chat.id, e)}
-                            className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-500/20 border border-transparent hover:border-red-400/30 transition-all duration-200"
-                            title="Delete conversation"
+                            onClick={() => handleConversationClick(chat.id)}
+                            className="w-full p-3 rounded-lg bg-gray-800/40 hover:bg-gray-700/50
+                                     border border-gray-700/60 hover:border-gray-600/70
+                                     transition-all duration-200 text-left group"
                           >
-                            <Trash2 size={10} className="text-gray-400 hover:text-red-400" />
+                            <div className="flex items-center justify-between min-w-0">
+                              <div className="flex items-center min-w-0 space-x-3">
+                                <div className="flex-shrink-0 w-2 h-2 rounded-full bg-green-400"></div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="text-sm font-medium text-gray-200 truncate">
+                                    {chat.summary}
+                                  </div>
+                                  <div className="flex items-center space-x-2 text-xs text-gray-400 mt-1">
+                                    <Clock size={10} />
+                                    <span>{formatTimestamp(chat.timestamp)}</span>
+                                    <span>•</span>
+                                    <span>{chat.messageCount} msgs</span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <button
+                                onClick={(e) => handleDeleteConversation(chat.id, e)}
+                                className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-500/20 border border-transparent hover:border-red-400/30 transition-all duration-200"
+                                title="Delete conversation"
+                              >
+                                <Trash2 size={10} className="text-gray-400 hover:text-red-400" />
+                              </button>
+                            </div>
                           </button>
                         </div>
-                      </button>
-                    </div>
-                  ))}
+                      ))}
 
-                  {recentChats.length === 0 && (
-                    <div className="text-center py-6 text-gray-500">
-                      <MessageSquare size={20} className="mx-auto mb-2 opacity-50" />
-                      <p className="text-xs">No recent chats</p>
+                      {recentChats.length === 0 && (
+                        <div className="text-center py-6 text-gray-500">
+                          <MessageSquare size={20} className="mx-auto mb-2 opacity-50" />
+                          <p className="text-xs">No recent chats</p>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
+                  </>
+                )}
               </div>
             </nav>
           </div>
 
           {/* Bottom Section - Stays at bottom */}
-          <div className="flex-shrink-0 p-4 border-t border-gray-700/30 space-y-3">
+          <div className="flex-shrink-0 p-3 border-t border-gray-700/30 space-y-2">
             {/* Loan Applications Button */}
             <button
               onClick={() => navigate('/loan-applications')}
               className={`
-                w-full p-3 rounded-lg bg-gray-800/50 hover:bg-gray-700/50
+                w-full p-2 rounded-lg bg-gray-800/50 hover:bg-gray-700/50
                 border border-gray-600/30 hover:border-gray-500/50
                 flex items-center transition-all duration-300 group
                 ${isCollapsed ? 'justify-center' : 'justify-start'}
               `}
+              title={isCollapsed ? "Loan Applications" : ""}
             >
-              <FileText size={18} className="text-blue-400 group-hover:text-blue-300" />
+              <FileText size={16} className="text-blue-400 group-hover:text-blue-300" />
               <span className={`
-                ml-3 font-medium text-gray-200 whitespace-nowrap transition-all duration-300
+                ml-2 font-medium text-gray-200 whitespace-nowrap transition-all duration-300 text-sm
                 ${isCollapsed ? 'opacity-0 scale-95 -translate-x-4' : 'opacity-100 scale-100 translate-x-0'}
               `}>
                 Loan Applications
@@ -320,6 +335,7 @@ export default function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
                 flex items-center transition-all duration-300 group
                 ${isCollapsed ? 'justify-center' : 'justify-start'}
               `}
+              title={isCollapsed ? "Sign Out" : ""}
             >
               <LogOut size={18} className="text-red-400 group-hover:text-red-300" />
               <span className={`
