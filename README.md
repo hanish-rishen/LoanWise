@@ -1,4 +1,4 @@
-# Lo## Features
+# LoanWise Features
 
 - 🔐 **Authentication**: Secure authentication with Clerk
 - 🗣️ **Voice AI**: Advanced voice conversations with VAD (Voice Activity Detection)
