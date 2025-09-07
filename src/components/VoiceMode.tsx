@@ -294,6 +294,8 @@ const VoiceMode = forwardRef<VoiceModeRef>((_, ref) => {
             }
             // Pause recognition while speaking to avoid double states and accidental self-capture
             try {
+              // Suppress any auto-restart for a moment to prevent echo
+              speechService.suppressAutoRestart(1200);
               speechService.stopListening();
               setIsListening(false);
             } catch (e) {

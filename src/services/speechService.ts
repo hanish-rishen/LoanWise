@@ -56,6 +56,7 @@ export class SpeechService {
   private isSpeaking = false;
   private continuousMode = false;
   private selectedVoice: SpeechSynthesisVoice | null = null;
+  private suppressAutoRestartUntil = 0; // timestamp to avoid immediate re-arm races
 
   // Callback functions
   public onSpeechStart: (() => void) | null = null;
@@ -109,12 +110,13 @@ export class SpeechService {
 
           // Keep mic alive in continuous mode, especially after long TTS (e.g., terms)
           if (this.continuousMode && !this.isSpeaking) {
+            const now = Date.now();
+            const delay = Math.max(0, this.suppressAutoRestartUntil - now);
             setTimeout(() => {
-              // If still not listening, restart capture
-              if (!this.isListening) {
+              if (!this.isListening && this.continuousMode && !this.isSpeaking) {
                 this.startListening().catch(console.error);
               }
-            }, 400);
+            }, delay > 0 ? delay : 400);
           }
         };
       }
@@ -182,19 +184,23 @@ export class SpeechService {
         utterance.voice = this.selectedVoice;
       }
 
-  // Configure utterance for faster voice as requested
-  utterance.rate = 1.15; // Faster speaking rate
+      // Configure utterance for faster voice as requested
+      utterance.rate = 1.15; // Faster speaking rate
       utterance.pitch = 1.0; // Normal pitch
       utterance.volume = 0.9;
 
+      // Pre-mark speaking to avoid recognition re-arming race
+      this.isSpeaking = true;
+      this.suppressAutoRestartUntil = Date.now() + 1200;
+
       utterance.onstart = () => {
         console.log('🔊 Speaking:', text.substring(0, 50) + '...');
-        this.isSpeaking = true;
       };
 
       utterance.onend = () => {
         console.log('🔊 Speech finished');
         this.isSpeaking = false;
+        this.suppressAutoRestartUntil = 0;
 
         // Restart listening in continuous mode
         if (this.continuousMode && this.recognition) {
@@ -301,6 +307,11 @@ export class SpeechService {
       this.recognition.continuous = enabled;
       this.recognition.interimResults = enabled ? true : false;
     }
+  }
+
+  // Allow callers to suppress recognition auto-restart briefly (to avoid echo race)
+  suppressAutoRestart(ms: number): void {
+    this.suppressAutoRestartUntil = Math.max(this.suppressAutoRestartUntil, Date.now() + ms);
   }
 
   isContinuousModeEnabled(): boolean {
