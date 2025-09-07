@@ -67,7 +67,9 @@ const VoiceMode = forwardRef<VoiceModeRef>((_, ref) => {
       // If not speaking and not currently listening, re-arm the mic
       if (!speechService.isCurrentlySpeaking() && !speechService.isCurrentlyListening()) {
         speechService.setContinuousMode(true);
-        speechService.startListening().catch(() => {});
+        speechService.startListening().catch((err) => {
+          console.debug('Keep-alive: failed to (re)start listening', err);
+        });
       }
     }, 1200);
   };
@@ -290,6 +292,13 @@ const VoiceMode = forwardRef<VoiceModeRef>((_, ref) => {
               clearTimeout(processingTimeout);
               processingTimeout = null;
             }
+            // Pause recognition while speaking to avoid double states and accidental self-capture
+            try {
+              speechService.stopListening();
+              setIsListening(false);
+            } catch (e) {
+              console.debug('Stop listening before speak failed:', e);
+            }
             await speechService.speak(aiResponse);
           } catch (error) {
             console.error('Speech synthesis error:', error);
@@ -313,7 +322,9 @@ const VoiceMode = forwardRef<VoiceModeRef>((_, ref) => {
             try {
               speechService.setContinuousMode(true);
               await speechService.startListening();
-            } catch {}
+            } catch (err) {
+              console.debug('Immediate re-arm listening failed:', err);
+            }
           }
         }
       } catch (error) {
