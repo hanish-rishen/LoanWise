@@ -274,8 +274,8 @@ export class VoiceService {
       utterance.voice = this.config.voice;
     }
 
-    // Adjust speech settings for better voice experience
-    utterance.rate = 0.9; // Slightly slower for clarity
+  // Adjust speech settings for faster voice as requested
+  utterance.rate = 1.15; // Faster speaking rate
     utterance.pitch = 1.0;
     utterance.volume = 0.8;
 

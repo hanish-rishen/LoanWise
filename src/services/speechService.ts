@@ -74,8 +74,9 @@ export class SpeechService {
       this.recognition = new SpeechRecognition();
 
       if (this.recognition) {
-        this.recognition.continuous = false;
-        this.recognition.interimResults = false;
+  // Default: single-utterance; will switch to continuous when continuousMode is enabled
+  this.recognition.continuous = false;
+  this.recognition.interimResults = false;
         this.recognition.lang = 'en-US';
 
         this.recognition.onstart = () => {
@@ -105,6 +106,16 @@ export class SpeechService {
           console.log('🎤 Speech recognition ended');
           this.isListening = false;
           this.onSpeechEnd?.();
+
+          // Keep mic alive in continuous mode, especially after long TTS (e.g., terms)
+          if (this.continuousMode && !this.isSpeaking) {
+            setTimeout(() => {
+              // If still not listening, restart capture
+              if (!this.isListening) {
+                this.startListening().catch(console.error);
+              }
+            }, 400);
+          }
         };
       }
     } else {
@@ -127,6 +138,10 @@ export class SpeechService {
         reject(new Error('Speech recognition not available'));
         return;
       }
+
+  // Align recognition settings with current continuous mode preference
+  this.recognition.continuous = this.continuousMode;
+  this.recognition.interimResults = this.continuousMode ? true : false;
 
       if (this.isListening) {
         console.log('Already listening');
@@ -167,8 +182,8 @@ export class SpeechService {
         utterance.voice = this.selectedVoice;
       }
 
-      // Configure utterance for more natural, human-like speech
-      utterance.rate = 0.95; // Slightly slower for better clarity
+  // Configure utterance for faster voice as requested
+  utterance.rate = 1.15; // Faster speaking rate
       utterance.pitch = 1.0; // Normal pitch
       utterance.volume = 0.9;
 
@@ -280,6 +295,12 @@ export class SpeechService {
   setContinuousMode(enabled: boolean): void {
     this.continuousMode = enabled;
     console.log('🎤 Continuous mode:', enabled ? 'enabled' : 'disabled');
+
+    // Reflect the preference on the underlying recognizer if available
+    if (this.recognition) {
+      this.recognition.continuous = enabled;
+      this.recognition.interimResults = enabled ? true : false;
+    }
   }
 
   isContinuousModeEnabled(): boolean {

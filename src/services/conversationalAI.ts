@@ -191,7 +191,7 @@ Remember: This is a continuous conversation. Use ALL previous context to avoid r
       }
     }
 
-    // Extract income - handle various formats
+  // Extract income - handle various formats
     const incomePatterns = [
       /(?:income|salary|earn)(?:\s+is)?\s+(\d+(?:\.\d+)?)\s*(?:lakh|lakhs)/i,
       /(?:income|salary|earn)(?:\s+is)?\s+(\d+(?:\.\d+)?)\s*(?:crore|crores)/i,
@@ -219,31 +219,51 @@ Remember: This is a continuous conversation. Use ALL previous context to avoid r
       }
     }
 
-    // Extract loan amount - fix "lacs" vs "lakhs" and improve patterns
-    const amountPatterns = [
+    // Extract loan amount - be careful not to misread monthly income as loan amount
+    const hasIncomeContext = /income|salary|per\s*month|monthly/.test(lowerMessage);
+    const explicitLoanContext = /(\bloan\b|\bamount\b|\bloan amount\b|\bneed\b|\bwant\b|looking for|borrow|fund|funding)/.test(lowerMessage);
+
+    // Strong loan amount patterns (lakh/crore or explicit loan-related phrasing)
+    const amountPatternsStrong = [
       /(\d+(?:\.\d+)?)\s*(?:lacs?|lakhs?)/i,  // Handle both "lacs" and "lakhs"
       /(\d+(?:\.\d+)?)\s*(?:crores?)/i,       // Handle "crore" and "crores"
       /(?:loan|amount|need|want|looking for)(?:\s+(?:amount|of))?(?:\s+is)?(?:\s+around)?(?:\s+rupees)?(?:\s+of)?\s+(\d{4,})/i,
       /(?:for|about|around|approximately)\s+(\d{4,})\s*(?:of\s+)?(?:loan|amount|rupees)?/i, // "for 600000 of loan amount"
       /(\d{4,})\s+(?:of\s+)?(?:loan|amount|rupees)/i, // "600000 of loan amount"
-      /(?:around|approximately|about)\s+(\d+)/i,
-      /^\s*(\d{5,})\s*$/i  // Standalone large numbers (5+ digits) when context suggests loan amount
+      /(?:around|approximately|about)\s+(\d+)/i
     ];
 
-    for (const pattern of amountPatterns) {
-      const match = message.match(pattern);
-      if (match) {
-        console.log(`🔍 Loan amount pattern matched: ${pattern.source} -> ${match[1]}`);
-        const num = parseFloat(match[1]);
-        if (pattern.source.includes('lacs?|lakhs?')) {
-          result.loan_amount = (num * 100000).toString();
-        } else if (pattern.source.includes('crores?')) {
-          result.loan_amount = (num * 10000000).toString();
-        } else {
-          result.loan_amount = num.toString();
+    // Only attempt to extract loan amount if:
+    // - The message explicitly talks about a loan/amount, OR
+    // - There's no income context and we didn't just extract monthly_income
+    if (explicitLoanContext || (!hasIncomeContext && !result.monthly_income)) {
+      let matchedAmount = false;
+      for (const pattern of amountPatternsStrong) {
+        const match = message.match(pattern);
+        if (match) {
+          console.log(`🔍 Loan amount pattern matched: ${pattern.source} -> ${match[1]}`);
+          const num = parseFloat(match[1]);
+          if (pattern.source.includes('lacs?|lakhs?')) {
+            result.loan_amount = (num * 100000).toString();
+          } else if (pattern.source.includes('crores?')) {
+            result.loan_amount = (num * 10000000).toString();
+          } else {
+            result.loan_amount = num.toString();
+          }
+          console.log(`🔍 Extracted loan amount: ${result.loan_amount}`);
+          matchedAmount = true;
+          break;
         }
-        console.log(`🔍 Extracted loan amount: ${result.loan_amount}`);
-        break;
+      }
+
+      // As a last resort, allow standalone 5+ digit numbers ONLY when there's explicit loan context
+      if (!matchedAmount && explicitLoanContext) {
+        const fallback = message.match(/^\s*(\d{5,})\s*$/i);
+        if (fallback) {
+          const num = parseFloat(fallback[1]);
+          result.loan_amount = num.toString();
+          console.log(`🔍 Extracted loan amount from fallback (explicit context): ${result.loan_amount}`);
+        }
       }
     }
 
@@ -609,6 +629,16 @@ LOAN TYPE EXAMPLES:
       } else {
         console.log(`🔍 Setting loan_amount to ${amount}`);
         processed.loan_amount = amount.toString();
+      }
+    }
+
+    // Final safety: if we captured monthly_income and there's no explicit loan context in the message,
+    // ensure we don't also set loan_amount from the same numeric reply
+    const loanContext = /(\bloan\b|\bloan amount\b|\bborrow\b|\bfund\b|\bfunding\b|\bneed\b|\bwant\b)/.test(lowerMessage);
+    const incomeContext = /(income|salary|per\s*month|monthly)/.test(lowerMessage);
+    if (processed.monthly_income && !loanContext && incomeContext) {
+      if (processed.loan_amount === processed.monthly_income || !extracted.loan_amount) {
+        delete processed.loan_amount;
       }
     }
 

@@ -44,6 +44,33 @@ const VoiceMode = forwardRef<VoiceModeRef>((_, ref) => {
 
   // Refs for auto-scrolling
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  // Keep-alive for listening after long AI responses (e.g., terms review)
+  const listenKeepAliveRef = useRef<number | null>(null);
+
+  const stopListenKeepAlive = () => {
+    if (listenKeepAliveRef.current) {
+      clearInterval(listenKeepAliveRef.current);
+      listenKeepAliveRef.current = null;
+    }
+  };
+
+  const startListenKeepAlive = (durationMs: number = 20000) => {
+    stopListenKeepAlive();
+    const startTime = Date.now();
+    listenKeepAliveRef.current = window.setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      if (elapsed > durationMs) {
+        stopListenKeepAlive();
+        return;
+      }
+
+      // If not speaking and not currently listening, re-arm the mic
+      if (!speechService.isCurrentlySpeaking() && !speechService.isCurrentlyListening()) {
+        speechService.setContinuousMode(true);
+        speechService.startListening().catch(() => {});
+      }
+    }, 1200);
+  };
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -196,16 +223,18 @@ const VoiceMode = forwardRef<VoiceModeRef>((_, ref) => {
 
       setCurrentTranscript(text);
       setIsProcessing(true);
+  // Stop any previous keep-alive loop while we process
+  stopListenKeepAlive();
 
-      // Set a timeout to ensure processing doesn't get stuck
-      const processingTimeout = setTimeout(() => {
+  // Set a timeout to ensure processing doesn't get stuck
+  let processingTimeout: any = setTimeout(() => {
         console.warn('⚠️ Processing timeout - resetting states');
         setIsProcessing(false);
         setCurrentTranscript('');
       }, 30000); // 30 second timeout
 
       // Ensure we have a conversation ID
-      const conversationId = currentConversationId || sessionStorage.getItem('currentConversationId') || `${user.id}-${Date.now()}`;
+  const conversationId = currentConversationId || sessionStorage.getItem('currentConversationId') || `${user.id}-${Date.now()}`;
       if (!currentConversationId) {
         setCurrentConversationId(conversationId);
         sessionStorage.setItem('currentConversationId', conversationId);
@@ -230,8 +259,8 @@ const VoiceMode = forwardRef<VoiceModeRef>((_, ref) => {
       await saveMessage(userMessage);
 
       try {
-        // Get AI response
-        const aiResponse = await getAIResponse(text);
+        // Get AI response with the active conversation ID
+        const aiResponse = await getAIResponse(text, conversationId);
 
         if (aiResponse) {
           const aiMessage: Message = {
@@ -248,20 +277,26 @@ const VoiceMode = forwardRef<VoiceModeRef>((_, ref) => {
           setMessages(prev => [...prev, aiMessage]);
           await saveMessage(aiMessage);
 
-          // Check if this response indicates conversation completion
-          const isConversationComplete = aiResponse.includes("Thank you for choosing LoanWise!") ||
-                                       aiResponse.includes("loan application with ID");
+          // Check if this response indicates conversation completion (post-submission only)
+          // Avoid stopping during terms review; only stop on clear submission confirmation
+          const isConversationComplete = aiResponse.includes("Application Submitted Successfully") ||
+                                         aiResponse.includes("loan application with ID");
 
           // Speak the response
           setIsSpeaking(true);
           try {
+            // Long TTS can exceed 30s; clear the processing timeout before speaking to avoid false resets
+            if (processingTimeout) {
+              clearTimeout(processingTimeout);
+              processingTimeout = null;
+            }
             await speechService.speak(aiResponse);
           } catch (error) {
             console.error('Speech synthesis error:', error);
           } finally {
             setIsSpeaking(false);
 
-            // If conversation is complete, stop the voice mode
+            // If conversation is complete (application submitted), stop the voice mode
             if (isConversationComplete) {
               console.log('🎤 Conversation completed - stopping voice mode');
               speechService.stopListening();
@@ -269,6 +304,16 @@ const VoiceMode = forwardRef<VoiceModeRef>((_, ref) => {
               // Don't restart listening
               return;
             }
+
+            // Proactively ensure mic stays armed for the user's reply (e.g., yes/no after terms)
+            // Start a short keep-alive loop to re-arm listening if it drops due to silence
+            startListenKeepAlive(25000);
+
+            // Also explicitly re-arm immediately for responsiveness
+            try {
+              speechService.setContinuousMode(true);
+              await speechService.startListening();
+            } catch {}
           }
         }
       } catch (error) {
@@ -300,6 +345,7 @@ const VoiceMode = forwardRef<VoiceModeRef>((_, ref) => {
       speechService.onSpeechEnd = null;
       speechService.onSpeechResult = null;
       speechService.onSpeechError = null;
+  stopListenKeepAlive();
     };
   }, [user?.id]);
 
@@ -328,7 +374,7 @@ const VoiceMode = forwardRef<VoiceModeRef>((_, ref) => {
     }
   };
 
-  const getAIResponse = async (userText: string): Promise<string | null> => {
+  const getAIResponse = async (userText: string, conversationId: string): Promise<string | null> => {
     try {
       if (!user?.id) {
         return "Please log in to continue.";
@@ -336,7 +382,7 @@ const VoiceMode = forwardRef<VoiceModeRef>((_, ref) => {
 
       // Check if this is loan application related and process with service
       const loanResult = await loanApplicationService.processUserInput(
-        currentConversationId,
+        conversationId,
         userText,
         user.id
       );

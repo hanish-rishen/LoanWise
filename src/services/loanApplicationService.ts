@@ -115,15 +115,15 @@ class LoanApplicationService {
         console.log('🔍 LoanApplicationService: No extracted info to update');
       }
 
-      // Check if application is complete - STRICT validation
-      if (aiResponse.applicationComplete) {
+    // Check if application is complete - STRICT validation
+    if (aiResponse.applicationComplete) {
         console.log('🔍 AI says application is complete. Checking flow completeness...');
         const isComplete = this.checkIfApplicationComplete(flow);
         console.log('🔍 Flow completion check result:', isComplete);
 
         if (isComplete) {
           // Check if we're already in terms review stage
-          if (flow.stage === 'terms_review' && (userInput.toLowerCase().includes('yes') || userInput.toLowerCase().includes('accept') || userInput.toLowerCase().includes('approve'))) {
+      if (flow.stage === 'terms_review' && (userInput.toLowerCase().includes('yes') || userInput.toLowerCase().includes('accept') || userInput.toLowerCase().includes('approve'))) {
             // User accepted terms, proceed with submission
             return await this.submitApplication(flow, conversationId, userId);
           }
@@ -136,7 +136,7 @@ class LoanApplicationService {
             };
           }
 
-          // First time completion - show terms for review
+      // First time completion - show terms for review; DO NOT auto-submit
           if (flow.stage !== 'terms_review') {
             flow.stage = 'terms_review';
             const calculatedTerms = this.calculateLoanTerms(flow.data);
@@ -153,14 +153,14 @@ class LoanApplicationService {
 
 💡 **Why this rate?** Based on your credit score of ${flow.data.credit_score}, monthly income of ₹${parseFloat(flow.data.monthly_income!).toLocaleString('en-IN')}, and loan type.
 
-Would you like to **accept these terms** and proceed with your application? Just say "yes" to accept or "no" if you'd like to modify anything.`;
+Would you like to accept these terms and proceed with your application? Please say "yes" to submit or "no" to adjust anything.`;
 
             return {
               flow,
               response: termsResponse
             };
           }
-        } else {
+  } else {
           return {
             flow,
             response: "I still need more information to complete your application. Let me ask the remaining questions."
