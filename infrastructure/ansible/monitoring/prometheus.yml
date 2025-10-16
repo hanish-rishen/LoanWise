@@ -1,0 +1,115 @@
+---
+- name: Setup Prometheus Monitoring
+  hosts: "{{ target_hosts | default('monitoring') }}"
+  remote_user: ec2-user
+  become: yes
+  
+  vars:
+    prometheus_version: "2.48.0"
+    prometheus_port: 9090
+    prometheus_user: prometheus
+    prometheus_group: prometheus
+  
+  tasks:
+    - name: Install required packages
+      yum:
+        name:
+          - wget
+          - tar
+          - curl
+        state: present
+    
+    - name: Create prometheus user
+      user:
+        name: "{{ prometheus_user }}"
+        shell: /bin/false
+        createhome: no
+      register: prometheus_user_result
+    
+    - name: Create prometheus directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ prometheus_user }}"
+        group: "{{ prometheus_group }}"
+        mode: '0755'
+      loop:
+        - /etc/prometheus
+        - /var/lib/prometheus
+    
+    - name: Download Prometheus
+      get_url:
+        url: "https://github.com/prometheus/prometheus/releases/download/v{{ prometheus_version }}/prometheus-{{ prometheus_version }}.linux-amd64.tar.gz"
+        dest: /tmp/prometheus.tar.gz
+        checksum: "sha256:https://github.com/prometheus/prometheus/releases/download/v{{ prometheus_version }}/sha256sums.txt"
+    
+    - name: Extract Prometheus
+      unarchive:
+        src: /tmp/prometheus.tar.gz
+        dest: /tmp
+        remote_src: yes
+    
+    - name: Copy Prometheus binary
+      copy:
+        src: "/tmp/prometheus-{{ prometheus_version }}.linux-amd64/prometheus"
+        dest: /usr/local/bin/prometheus
+        owner: "{{ prometheus_user }}"
+        group: "{{ prometheus_group }}"
+        mode: '0755'
+        remote_src: yes
+    
+    - name: Copy Prometheus tools
+      copy:
+        src: "/tmp/prometheus-{{ prometheus_version }}.linux-amd64/{{ item }}"
+        dest: "/usr/local/bin/{{ item }}"
+        owner: "{{ prometheus_user }}"
+        group: "{{ prometheus_group }}"
+        mode: '0755'
+        remote_src: yes
+      loop:
+        - promtool
+    
+    - name: Copy Prometheus configuration
+      template:
+        src: prometheus.yml.j2
+        dest: /etc/prometheus/prometheus.yml
+        owner: "{{ prometheus_user }}"
+        group: "{{ prometheus_group }}"
+        mode: '0644'
+      notify: restart prometheus
+    
+    - name: Create Prometheus systemd service
+      template:
+        src: prometheus.service.j2
+        dest: /etc/systemd/system/prometheus.service
+        owner: root
+        group: root
+        mode: '0644'
+      notify: reload systemd
+    
+    - name: Enable and start Prometheus service
+      systemd:
+        name: prometheus
+        state: started
+        enabled: yes
+        daemon_reload: yes
+    
+    - name: Wait for Prometheus to be ready
+      uri:
+        url: "http://localhost:{{ prometheus_port }}/-/healthy"
+        method: GET
+        status_code: 200
+      register: result
+      until: result.status == 200
+      retries: 12
+      delay: 5
+  
+  handlers:
+    - name: restart prometheus
+      systemd:
+        name: prometheus
+        state: restarted
+    
+    - name: reload systemd
+      systemd:
+        daemon_reload: yes
