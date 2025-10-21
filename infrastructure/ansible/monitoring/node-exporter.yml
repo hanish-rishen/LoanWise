@@ -1,0 +1,93 @@
+---
+- name: Setup Node Exporter for System Metrics
+  hosts: "{{ target_hosts | default('all') }}"
+  remote_user: ec2-user
+  become: yes
+
+  vars:
+    node_exporter_version: "1.7.0"
+    node_exporter_port: 9100
+    node_exporter_user: node_exporter
+    node_exporter_group: node_exporter
+
+  tasks:
+    - name: Create node_exporter user
+      user:
+        name: "{{ node_exporter_user }}"
+        shell: /bin/false
+        createhome: no
+
+    - name: Download Node Exporter
+      get_url:
+        url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+        dest: /tmp/node_exporter.tar.gz
+
+    - name: Extract Node Exporter
+      unarchive:
+        src: /tmp/node_exporter.tar.gz
+        dest: /tmp
+        remote_src: yes
+
+    - name: Copy Node Exporter binary
+      copy:
+        src: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64/node_exporter"
+        dest: /usr/local/bin/node_exporter
+        owner: "{{ node_exporter_user }}"
+        group: "{{ node_exporter_group }}"
+        mode: '0755'
+        remote_src: yes
+
+    - name: Create Node Exporter systemd service
+      copy:
+        content: |
+          [Unit]
+          Description=Node Exporter
+          Wants=network-online.target
+          After=network-online.target
+
+          [Service]
+          User={{ node_exporter_user }}
+          Group={{ node_exporter_group }}
+          Type=simple
+          ExecStart=/usr/local/bin/node_exporter \
+              --web.listen-address=:{{ node_exporter_port }}
+
+          Restart=on-failure
+          RestartSec=5s
+
+          [Install]
+          WantedBy=multi-user.target
+        dest: /etc/systemd/system/node_exporter.service
+        owner: root
+        group: root
+        mode: '0644'
+      notify: reload systemd
+
+    - name: Enable and start Node Exporter service
+      systemd:
+        name: node_exporter
+        state: started
+        enabled: yes
+        daemon_reload: yes
+
+    - name: Wait for Node Exporter to be ready
+      uri:
+        url: "http://localhost:{{ node_exporter_port }}/metrics"
+        method: GET
+        status_code: 200
+      register: result
+      until: result.status == 200
+      retries: 12
+      delay: 5
+
+    - name: Print Node Exporter access info
+      debug:
+        msg:
+          - "Node Exporter has been installed successfully!"
+          - "Metrics URL: http://{{ ansible_default_ipv4.address }}:{{ node_exporter_port }}/metrics"
+          - "Add this target to your Prometheus configuration"
+
+  handlers:
+    - name: reload systemd
+      systemd:
+        daemon_reload: yes

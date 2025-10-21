@@ -3,13 +3,13 @@
   hosts: "{{ target_hosts | default('monitoring') }}"
   remote_user: ec2-user
   become: yes
-  
+
   vars:
     grafana_version: "10.2.2"
     grafana_port: 3000
     grafana_admin_user: admin
     grafana_admin_password: "{{ grafana_admin_password | default('admin123') }}"
-  
+
   tasks:
     - name: Add Grafana repository
       copy:
@@ -24,12 +24,12 @@
           sslverify=1
           sslcacert=/etc/pki/tls/certs/ca-bundle.crt
         dest: /etc/yum.repos.d/grafana.repo
-    
+
     - name: Install Grafana
       yum:
         name: grafana
         state: present
-    
+
     - name: Create Grafana provisioning directories
       file:
         path: "{{ item }}"
@@ -40,7 +40,7 @@
       loop:
         - /etc/grafana/provisioning/datasources
         - /etc/grafana/provisioning/dashboards
-    
+
     - name: Configure Grafana datasource (Prometheus)
       copy:
         content: |
@@ -56,7 +56,7 @@
         owner: grafana
         group: grafana
         mode: '0644'
-    
+
     - name: Configure Grafana dashboard provider
       copy:
         content: |
@@ -75,14 +75,14 @@
         owner: grafana
         group: grafana
         mode: '0644'
-    
+
     - name: Enable and start Grafana service
       systemd:
         name: grafana-server
         state: started
         enabled: yes
         daemon_reload: yes
-    
+
     - name: Wait for Grafana to be ready
       uri:
         url: "http://localhost:{{ grafana_port }}/api/health"
@@ -92,7 +92,7 @@
       until: result.status == 200
       retries: 12
       delay: 5
-    
+
     - name: Set Grafana admin password
       grafana_admin_user:
         grafana_url: "http://localhost:{{ grafana_port }}"
@@ -102,7 +102,7 @@
         login_password: admin
         new_password: "{{ grafana_admin_password }}"
       ignore_errors: yes
-    
+
     - name: Create performance dashboard
       grafana_dashboard:
         grafana_url: "http://localhost:{{ grafana_port }}"
@@ -110,7 +110,7 @@
         state: present
         dashboard: "{{ lookup('file', 'dashboards/performance.json') }}"
       ignore_errors: yes
-    
+
     - name: Print Grafana access information
       debug:
         msg:

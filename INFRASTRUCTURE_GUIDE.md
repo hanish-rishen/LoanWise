@@ -155,7 +155,7 @@ Creates and manages AWS infrastructure using Terraform as Infrastructure as Code
    aws s3api create-bucket \
      --bucket loanwise-terraform-state \
      --region us-east-1
-   
+
    aws s3api put-bucket-versioning \
      --bucket loanwise-terraform-state \
      --versioning-configuration Status=Enabled

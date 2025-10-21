@@ -93,11 +93,11 @@ ansible all -i inventory/production -m ping
    Kind: Secret text
    ID: vite-clerk-key
    Secret: <your-value>
-   
+
    Kind: Secret text
    ID: vite-groq-key
    Secret: <your-value>
-   
+
    Kind: Username with password
    ID: docker-credentials
    Username: <docker-username>

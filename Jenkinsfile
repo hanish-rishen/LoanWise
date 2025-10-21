@@ -8,15 +8,15 @@ pipeline {
         APP_NAME = 'loanwise'
         IMAGE_TAG = "${BUILD_NUMBER}-${GIT_COMMIT.take(7)}"
         AWS_REGION = 'us-east-1'
-        
+
         // Infrastructure directories
         TERRAFORM_DIR = './infrastructure/terraform'
         ANSIBLE_DIR = './infrastructure/ansible'
-        
+
         // Build configuration
         NODE_VERSION = '20.x'
         CI = 'true'
-        
+
         // Environment variables (configure these in Jenkins credentials)
         VITE_CLERK_PUBLISHABLE_KEY = credentials('vite-clerk-key')
         VITE_GROQ_API_KEY = credentials('vite-groq-key')

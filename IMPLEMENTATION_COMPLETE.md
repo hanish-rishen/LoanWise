@@ -16,7 +16,7 @@ All 6 implementation steps from the checklist have been completed!
 
 ### Step 3: Infrastructure (Terraform)
 - **Files**: 9 Terraform files in `infrastructure/terraform/`
-- **Features**: 
+- **Features**:
   - AWS VPC with public/private subnets
   - RDS PostgreSQL (Multi-AZ)
   - Application Load Balancer
@@ -146,14 +146,14 @@ LoanWise/
 
 ## 🔑 Key Features
 
-✅ **Automated CI/CD**: Git push → Build → Test → Deploy  
-✅ **Infrastructure as Code**: Terraform for reproducible deployments  
-✅ **Configuration Management**: Ansible for application deployment  
-✅ **High Availability**: Multi-AZ database, load balancer, auto-scaling  
-✅ **Monitoring**: Prometheus collects metrics  
-✅ **Visualization**: Grafana dashboards for monitoring  
-✅ **Security**: IAM roles, security groups, encrypted storage  
-✅ **Cost Optimized**: Auto-scaling, reasonable instance sizes  
+✅ **Automated CI/CD**: Git push → Build → Test → Deploy
+✅ **Infrastructure as Code**: Terraform for reproducible deployments
+✅ **Configuration Management**: Ansible for application deployment
+✅ **High Availability**: Multi-AZ database, load balancer, auto-scaling
+✅ **Monitoring**: Prometheus collects metrics
+✅ **Visualization**: Grafana dashboards for monitoring
+✅ **Security**: IAM roles, security groups, encrypted storage
+✅ **Cost Optimized**: Auto-scaling, reasonable instance sizes
 
 ## 📊 Deployment Architecture
 

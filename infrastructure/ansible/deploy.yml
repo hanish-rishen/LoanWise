@@ -3,20 +3,20 @@
   hosts: "{{ target_hosts | default('app_servers') }}"
   remote_user: ec2-user
   become: yes
-  
+
   vars:
     docker_image: "{{ docker_image }}"
     environment: "{{ environment | default('production') }}"
     app_container_name: loanwise-app
     app_port: 8080
-  
+
   pre_tasks:
     - name: Update system packages
       yum:
         name: "*"
         state: latest
       tags: always
-  
+
   tasks:
     - name: Install Docker
       yum:
@@ -24,41 +24,41 @@
           - docker
         state: present
       register: docker_install
-    
+
     - name: Start and enable Docker service
       systemd:
         name: docker
         state: started
         enabled: yes
         daemon_reload: yes
-    
+
     - name: Add ec2-user to docker group
       user:
         name: ec2-user
         groups: docker
         append: yes
-    
+
     - name: Log into Docker registry
       shell: |
         aws ecr get-login-password --region $(curl -s http://169.254.169.254/latest/meta-data/placement/region) | \
         docker login --username AWS --password-stdin $(echo "{{ docker_image }}" | cut -d'/' -f1)
       when: "'amazonaws.com' in docker_image"
       no_log: true
-    
+
     - name: Pull latest Docker image
       shell: |
         docker pull "{{ docker_image }}"
       register: docker_pull
       changed_when: "'Pulling from' in docker_pull.stdout"
-    
+
     - name: Stop running container
       shell: docker stop {{ app_container_name }} || true
       changed_when: false
-    
+
     - name: Remove old container
       shell: docker rm {{ app_container_name }} || true
       changed_when: false
-    
+
     - name: Run Docker container
       docker_container:
         name: "{{ app_container_name }}"
@@ -76,7 +76,7 @@
           timeout: 10
           retries: 3
           start_period: 40
-    
+
     - name: Wait for application to be healthy
       uri:
         url: "http://localhost:{{ app_port }}/health"
@@ -86,7 +86,7 @@
       until: result.status == 200
       retries: 12
       delay: 5
-  
+
   post_tasks:
     - name: Print deployment summary
       debug:
