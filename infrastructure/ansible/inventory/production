@@ -1,21 +1,10 @@
-[all]
-localhost ansible_connection=local
+﻿[app_servers]
+18.208.223.200
+98.93.245.142
+54.157.169.222
 
-[app_servers]
-# Add your EC2 instance IPs here
-# Example:
-# 10.0.1.10
-# 10.0.1.11
-
-[monitoring]
-# Add your monitoring server IP here
-# Example:
-# 10.0.1.20
-
-[production:children]
-app_servers
-monitoring
-
-[production:vars]
+[app_servers:vars]
 ansible_user=ec2-user
-ansible_ssh_private_key_file=~/.ssh/loanwise-prod.pem
+ansible_ssh_private_key_file=/mnt/c/Users/hanis/hanish.pem
+ansible_python_interpreter=/usr/bin/python3
+ansible_ssh_common_args='-o StrictHostKeyChecking=no'

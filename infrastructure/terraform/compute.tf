@@ -6,7 +6,7 @@ resource "aws_lb" "main" {
   security_groups    = [aws_security_group.alb.id]
   subnets            = aws_subnet.public[*].id
 
-  enable_deletion_protection = true
+  enable_deletion_protection = false  # Disabled for AWS Lab
 
   tags = {
     Name = "${var.project_name}-alb"
@@ -53,11 +53,15 @@ resource "aws_launch_template" "main" {
   image_id      = data.aws_ami.amazon_linux_2.id
   instance_type = var.instance_type
 
-  iam_instance_profile {
-    name = aws_iam_instance_profile.ec2.name
-  }
+  # IAM instance profile removed for AWS Lab compatibility
+  # iam_instance_profile {
+  #   name = aws_iam_instance_profile.ec2.name
+  # }
 
-  security_groups = [aws_security_group.ec2.id]
+  network_interfaces {
+    associate_public_ip_address = true
+    security_groups             = [aws_security_group.ec2.id]
+  }
 
   user_data = base64encode(templatefile("${path.module}/user_data.sh", {
     docker_image   = var.docker_image

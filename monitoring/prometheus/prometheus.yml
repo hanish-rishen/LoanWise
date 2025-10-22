@@ -1,0 +1,40 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'loanwise-local'
+    environment: 'development'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+# Load rules once and periodically evaluate them
+rule_files:
+  - "alerts.yml"
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # cAdvisor - Container metrics (Docker Desktop)
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+        labels:
+          instance: 'docker-desktop'
+
+  # CloudWatch Exporter - AWS Infrastructure metrics
+  - job_name: 'cloudwatch'
+    static_configs:
+      - targets: ['cloudwatch-exporter:9106']
+        labels:
+          environment: 'aws'
+          region: 'us-east-1'
+    scrape_interval: 5m  # CloudWatch metrics update every 5 minutes

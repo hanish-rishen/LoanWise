@@ -38,13 +38,6 @@
         groups: docker
         append: yes
 
-    - name: Log into Docker registry
-      shell: |
-        aws ecr get-login-password --region $(curl -s http://169.254.169.254/latest/meta-data/placement/region) | \
-        docker login --username AWS --password-stdin $(echo "{{ docker_image }}" | cut -d'/' -f1)
-      when: "'amazonaws.com' in docker_image"
-      no_log: true
-
     - name: Pull latest Docker image
       shell: |
         docker pull "{{ docker_image }}"
@@ -60,32 +53,25 @@
       changed_when: false
 
     - name: Run Docker container
-      docker_container:
-        name: "{{ app_container_name }}"
-        image: "{{ docker_image }}"
-        state: started
-        restart_policy: always
-        ports:
-          - "{{ app_port }}:8080"
-        env:
-          DATABASE_URL: "{{ database_url }}"
-          ENVIRONMENT: "{{ environment }}"
-        healthcheck:
-          test: "curl -f http://localhost:8080/health || exit 1"
-          interval: 30
-          timeout: 10
-          retries: 3
-          start_period: 40
+      shell: |
+        docker run -d \
+          --name {{ app_container_name }} \
+          --restart always \
+          -p {{ app_port }}:8080 \
+          -e DATABASE_URL="{{ database_url }}" \
+          -e ENVIRONMENT="{{ environment }}" \
+          {{ docker_image }}
 
     - name: Wait for application to be healthy
-      uri:
-        url: "http://localhost:{{ app_port }}/health"
-        method: GET
-        status_code: 200
-      register: result
-      until: result.status == 200
-      retries: 12
-      delay: 5
+      shell: |
+        for i in {1..12}; do
+          if curl -f http://localhost:{{ app_port }} 2>/dev/null; then
+            echo "Application is healthy"
+            exit 0
+          fi
+          sleep 5
+        done
+        exit 1
 
   post_tasks:
     - name: Print deployment summary

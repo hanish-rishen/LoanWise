@@ -1,100 +1,71 @@
-# LoanWise Features
+# 🏦 LoanWise - AI-Powered Loan Management System
 
-- 🔐 **Authentication**: Secure authentication with Clerk
-- 🗣️ **Voice AI**: Advanced voice conversations with VAD (Voice Activity Detection)
-- 🤖 **AI Chat**: Integrated chat interface for loan assistance powered by Groq
-- 📊 **Loan Management**: Comprehensive loan application tracking
-- 🎨 **Modern UI**: Beautiful Tailwind CSS design
-- 🎤 **Voice Controls**: Real-time voice input/output with visual feedback
+> Full-stack loan management application with AI assistance, voice mode, and comprehensive DevOps pipeline
 
-## Tech Stack
+[![CI/CD](https://github.com/hanish-rishen/LoanWise/actions/workflows/main.yml/badge.svg)](https://github.com/hanish-rishen/LoanWise/actions)
+[![Vercel](https://img.shields.io/badge/Vercel-Deployed-success)](https://loanwise.vercel.app)
 
-- **Frontend**: React 18, TypeScript, Vite
-- **Authentication**: Clerk
-- **Database**: Neon (PostgreSQL) with Drizzle ORM
-- **AI**: Groq API (Llama models)
-- **Voice**: Web Speech API + VAD (@ricky0123/vad)
-- **Styling**: Tailwind CSS
-- **Icons**: Lucide Reactered Loan Management Platform
+## 🚀 Quick Links
 
-A modern React application for managing loan applications with AI-powered chat assistance, built with Clerk authentication and Neon PostgreSQL database.
+- **Live App**: [loanwise.vercel.app](https://loanwise.vercel.app)
+- **Jenkins**: http://localhost:8080
+- **Grafana**: http://localhost:3000
+- **Prometheus**: http://localhost:9090
 
-## Features
+---
 
-- 🔐 **Authentication**: Secure authentication with Clerk
-- �️ **Database**: Serverless PostgreSQL with Neon
-- 🤖 **AI Chat**: Integrated chat interface for loan assistance
-- 📊 **Loan Management**: Comprehensive loan application tracking
-- 🎨 **Modern UI**: Beautiful Tailwind CSS design
+## 📋 What's Included
 
-## Tech Stack
+### Application Features
+- 🤖 AI-powered loan assistant (Groq LLaMA)
+- 🎤 Voice mode with speech recognition
+- 📊 Loan application management
+- 💬 Real-time chat interface
+- 🔐 Clerk authentication
+- 💾 Neon PostgreSQL database
 
-- **Frontend**: React 18, TypeScript, Vite
-- **Authentication**: Clerk
-- **Database**: Neon (PostgreSQL) with Drizzle ORM
-- **Styling**: Tailwind CSS
-- **Icons**: Lucide React
+### DevOps Stack
+- 🏗️ **Infrastructure**: Terraform (AWS VPC, EC2, RDS, ALB)
+- 🔄 **CI/CD**: Jenkins + GitHub Actions
+- 📦 **Containerization**: Docker + Docker Hub
+- 📊 **Monitoring**: Prometheus + Grafana
+- ☁️ **Deployment**: Vercel (Production)
 
-## Setup Instructions
+---
 
-### 1. Clone and Install Dependencies
+## 🛠️ Tech Stack
+
+**Frontend**: React 18, TypeScript, Vite, TailwindCSS
+**Backend**: Node.js, Express, PostgreSQL (Neon)
+**AI**: Groq API (LLaMA 3.3), Speech Recognition
+**Auth**: Clerk
+**DevOps**: Docker, Terraform, Jenkins, Prometheus, Grafana
+**Cloud**: AWS (VPC, EC2, RDS, ALB), Vercel
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Node.js 20.x
+- Docker Desktop
+- Jenkins (optional, for CI/CD)
+
+### Local Development
 
 ```bash
-cd r:\LoanWise\project
+# 1. Clone repository
+git clone https://github.com/hanish-rishen/LoanWise.git
+cd LoanWise
+
+# 2. Install dependencies
 npm install
-```
 
-### 2. Set up Clerk Authentication
-
-1. Go to [Clerk Dashboard](https://dashboard.clerk.dev/)
-2. Create a new application
-3. Copy your publishable key
-4. Add it to your `.env` file
-
-### 3. Set up Neon Database
-
-1. Go to [Neon Console](https://console.neon.tech/)
-2. Create a new project
-3. Create a database and note the connection string
-4. Run the database schema:
-
-```bash
-# Connect to your Neon database using psql or any PostgreSQL client
-psql "your-neon-connection-string" -f database-schema.sql
-```
-
-Or copy and paste the SQL commands from `database-schema.sql` into your Neon SQL editor.
-
-### 4. Set up Groq AI (for Voice Features)
-
-1. Go to [Groq Console](https://console.groq.com/)
-2. Create an account and get your API key
-3. Add it to your `.env` file
-
-### 5. Environment Variables
-
-Copy `.env.example` to `.env` and fill in your keys:
-
-```bash
+# 3. Set up environment variables
 cp .env.example .env
-```
+# Add your Clerk, Groq, and Neon credentials
 
-Update the following variables in `.env`:
-
-```env
-# Clerk
-VITE_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
-
-# Neon Database
-VITE_NEON_DATABASE_URL=postgresql://username:password@hostname/database?sslmode=require
-
-# Groq AI (for voice features)
-VITE_GROQ_API_KEY=your_groq_api_key
-```
-
-### 6. Run the Application
-
-```bash
+# 4. Run development server
 npm run dev
 ```
 

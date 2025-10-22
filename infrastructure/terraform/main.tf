@@ -9,7 +9,7 @@ terraform {
   }
 
   backend "s3" {
-    bucket         = "loanwise-terraform-state"
+    bucket         = "loanwise-terraform-state-638967610858362026"
     key            = "prod/terraform.tfstate"
     region         = "us-east-1"
     encrypt        = true
@@ -20,14 +20,14 @@ terraform {
 provider "aws" {
   region = var.aws_region
 
-  default_tags {
-    tags = {
-      Environment = var.environment
-      Project     = var.project_name
-      ManagedBy   = "Terraform"
-      CreatedAt   = timestamp()
-    }
-  }
+  # Default tags removed for AWS Lab compatibility
+  # default_tags {
+  #   tags = {
+  #     Environment = var.environment
+  #     Project     = var.project_name
+  #     ManagedBy   = "Terraform"
+  #   }
+  # }
 }
 
 # Data source for availability zones

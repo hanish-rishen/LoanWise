@@ -23,3 +23,34 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# AWS
+*.pem
+.aws/
+
+# Monitoring
+monitoring/.env
+monitoring/**/*.log
+
+# Build artifacts
+tfplan
+tfplan.json
+
+# Deployment scripts (sensitive)
+deploy-monitoring-to-existing-instances.ps1
+deploy-monitoring-aws.ps1

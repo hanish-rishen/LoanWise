@@ -12,6 +12,7 @@ output "database_endpoint" {
 output "database_name" {
   description = "Database name"
   value       = aws_db_instance.main.db_name
+  sensitive   = true
 }
 
 output "vpc_id" {

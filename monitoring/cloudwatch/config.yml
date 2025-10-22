@@ -1,0 +1,167 @@
+---
+region: us-east-1
+metrics:
+  # EC2 Instance Metrics
+  - aws_namespace: AWS/EC2
+    aws_metric_name: CPUUtilization
+    aws_dimensions: [InstanceId]
+    aws_statistics: [Average, Maximum]
+    period_seconds: 300
+    range_seconds: 600
+
+  - aws_namespace: AWS/EC2
+    aws_metric_name: NetworkIn
+    aws_dimensions: [InstanceId]
+    aws_statistics: [Sum]
+    period_seconds: 300
+    range_seconds: 600
+
+  - aws_namespace: AWS/EC2
+    aws_metric_name: NetworkOut
+    aws_dimensions: [InstanceId]
+    aws_statistics: [Sum]
+    period_seconds: 300
+    range_seconds: 600
+
+  - aws_namespace: AWS/EC2
+    aws_metric_name: DiskReadBytes
+    aws_dimensions: [InstanceId]
+    aws_statistics: [Sum]
+    period_seconds: 300
+    range_seconds: 600
+
+  - aws_namespace: AWS/EC2
+    aws_metric_name: DiskWriteBytes
+    aws_dimensions: [InstanceId]
+    aws_statistics: [Sum]
+    period_seconds: 300
+    range_seconds: 600
+
+  - aws_namespace: AWS/EC2
+    aws_metric_name: StatusCheckFailed
+    aws_dimensions: [InstanceId]
+    aws_statistics: [Maximum]
+    period_seconds: 300
+    range_seconds: 600
+
+  # Application Load Balancer Metrics
+  - aws_namespace: AWS/ApplicationELB
+    aws_metric_name: RequestCount
+    aws_dimensions: [LoadBalancer]
+    aws_statistics: [Sum]
+    period_seconds: 300
+    range_seconds: 600
+
+  - aws_namespace: AWS/ApplicationELB
+    aws_metric_name: TargetResponseTime
+    aws_dimensions: [LoadBalancer]
+    aws_statistics: [Average, Maximum]
+    period_seconds: 300
+    range_seconds: 600
+
+  - aws_namespace: AWS/ApplicationELB
+    aws_metric_name: HTTPCode_Target_2XX_Count
+    aws_dimensions: [LoadBalancer]
+    aws_statistics: [Sum]
+    period_seconds: 300
+    range_seconds: 600
+
+  - aws_namespace: AWS/ApplicationELB
+    aws_metric_name: HTTPCode_Target_4XX_Count
+    aws_dimensions: [LoadBalancer]
+    aws_statistics: [Sum]
+    period_seconds: 300
+    range_seconds: 600
+
+  - aws_namespace: AWS/ApplicationELB
+    aws_metric_name: HTTPCode_Target_5XX_Count
+    aws_dimensions: [LoadBalancer]
+    aws_statistics: [Sum]
+    period_seconds: 300
+    range_seconds: 600
+
+  - aws_namespace: AWS/ApplicationELB
+    aws_metric_name: HealthyHostCount
+    aws_dimensions: [LoadBalancer, TargetGroup]
+    aws_statistics: [Average]
+    period_seconds: 300
+    range_seconds: 600
+
+  - aws_namespace: AWS/ApplicationELB
+    aws_metric_name: UnHealthyHostCount
+    aws_dimensions: [LoadBalancer, TargetGroup]
+    aws_statistics: [Average]
+    period_seconds: 300
+    range_seconds: 600
+
+  # RDS Database Metrics (if your RDS is still running)
+  - aws_namespace: AWS/RDS
+    aws_metric_name: CPUUtilization
+    aws_dimensions: [DBInstanceIdentifier]
+    aws_statistics: [Average, Maximum]
+    period_seconds: 300
+    range_seconds: 600
+
+  - aws_namespace: AWS/RDS
+    aws_metric_name: DatabaseConnections
+    aws_dimensions: [DBInstanceIdentifier]
+    aws_statistics: [Average, Maximum]
+    period_seconds: 300
+    range_seconds: 600
+
+  - aws_namespace: AWS/RDS
+    aws_metric_name: FreeableMemory
+    aws_dimensions: [DBInstanceIdentifier]
+    aws_statistics: [Average]
+    period_seconds: 300
+    range_seconds: 600
+
+  - aws_namespace: AWS/RDS
+    aws_metric_name: FreeStorageSpace
+    aws_dimensions: [DBInstanceIdentifier]
+    aws_statistics: [Average]
+    period_seconds: 300
+    range_seconds: 600
+
+  - aws_namespace: AWS/RDS
+    aws_metric_name: ReadLatency
+    aws_dimensions: [DBInstanceIdentifier]
+    aws_statistics: [Average]
+    period_seconds: 300
+    range_seconds: 600
+
+  - aws_namespace: AWS/RDS
+    aws_metric_name: WriteLatency
+    aws_dimensions: [DBInstanceIdentifier]
+    aws_statistics: [Average]
+    period_seconds: 300
+    range_seconds: 600
+
+  # Auto Scaling Group Metrics
+  - aws_namespace: AWS/AutoScaling
+    aws_metric_name: GroupDesiredCapacity
+    aws_dimensions: [AutoScalingGroupName]
+    aws_statistics: [Average]
+    period_seconds: 300
+    range_seconds: 600
+
+  - aws_namespace: AWS/AutoScaling
+    aws_metric_name: GroupInServiceInstances
+    aws_dimensions: [AutoScalingGroupName]
+    aws_statistics: [Average]
+    period_seconds: 300
+    range_seconds: 600
+
+  - aws_namespace: AWS/AutoScaling
+    aws_metric_name: GroupMinSize
+    aws_dimensions: [AutoScalingGroupName]
+    aws_statistics: [Average]
+    period_seconds: 300
+    range_seconds: 600
+
+  - aws_namespace: AWS/AutoScaling
+    aws_metric_name: GroupMaxSize
+    aws_dimensions: [AutoScalingGroupName]
+    aws_statistics: [Average]
+    period_seconds: 300
+    range_seconds: 600
