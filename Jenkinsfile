@@ -114,6 +114,71 @@ pipeline {
                 '''
             }
         }
+
+        stage('Push to Docker Registry') {
+            when {
+                branch 'main'
+            }
+            steps {
+                echo '📤 Pushing Docker image to registry...'
+                script {
+                    docker.withRegistry("https://${DOCKER_REGISTRY}", 'docker-credentials') {
+                        sh """
+                            docker tag ${APP_NAME}:${IMAGE_TAG} ${DOCKER_REGISTRY}/${APP_NAME}:${IMAGE_TAG}
+                            docker tag ${APP_NAME}:latest ${DOCKER_REGISTRY}/${APP_NAME}:latest
+                            docker push ${DOCKER_REGISTRY}/${APP_NAME}:${IMAGE_TAG}
+                            docker push ${DOCKER_REGISTRY}/${APP_NAME}:latest
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to Production') {
+            when {
+                branch 'main'
+            }
+            steps {
+                echo '🚀 Deploying to production...'
+                script {
+                    def deployStatus = input(
+                        message: 'Deploy to production?',
+                        parameters: [
+                            choice(name: 'DEPLOY', choices: ['Yes', 'No'], description: 'Proceed with deployment?')
+                        ]
+                    )
+                    
+                    if (deployStatus == 'Yes') {
+                        echo '🎯 Deploying application...'
+                        sh """
+                            docker stop loanwise-prod || true
+                            docker rm loanwise-prod || true
+                            docker run -d \
+                                --name loanwise-prod \
+                                --restart unless-stopped \
+                                -p 80:8080 \
+                                -e NODE_ENV=production \
+                                ${APP_NAME}:${IMAGE_TAG}
+                            
+                            # Wait for container to start
+                            sleep 10
+                            
+                            # Verify deployment
+                            if docker ps | grep loanwise-prod; then
+                                echo "✅ Deployment successful!"
+                                echo "🌐 Application running at http://localhost"
+                            else
+                                echo "❌ Deployment failed!"
+                                docker logs loanwise-prod
+                                exit 1
+                            fi
+                        """
+                    } else {
+                        echo '⏭️ Deployment skipped by user'
+                    }
+                }
+            }
+        }
     }
 
     post {
