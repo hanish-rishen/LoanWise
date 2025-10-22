@@ -2,14 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_REGISTRY = credentials('docker-registry-url')
-        DOCKER_CREDENTIALS = credentials('docker-credentials')
         APP_NAME = 'loanwise'
-        IMAGE_TAG = "${BUILD_NUMBER}"
-
-        VITE_CLERK_PUBLISHABLE_KEY = credentials('vite-clerk-key')
-        VITE_GROQ_API_KEY = credentials('vite-groq-key')
-        VITE_DATABASE_URL = credentials('vite-database-url')
     }
 
     tools {
@@ -52,10 +45,9 @@ pipeline {
             steps {
                 echo '🛡️ Running security audit...'
                 script {
-                    try {
-                        sh 'npm audit --audit-level=moderate'
-                    } catch (Exception e) {
-                        echo "⚠️ Security vulnerabilities found"
+                    def auditResult = sh(script: 'npm audit --audit-level=moderate', returnStatus: true)
+                    if (auditResult != 0) {
+                        echo "⚠️ Security vulnerabilities found - marking build as unstable"
                         currentBuild.result = 'UNSTABLE'
                     }
                 }
@@ -66,115 +58,20 @@ pipeline {
             steps {
                 echo '🏗️ Building application...'
                 sh 'npm run build'
+                echo '✅ Build complete - static files ready in dist/'
             }
         }
 
         stage('Test') {
             steps {
                 echo '🧪 Running tests...'
-                sh 'npm test -- --passWithNoTests || true'
-            }
-        }
-
-        stage('Build Docker Image') {
-            steps {
-                echo '🐳 Building Docker image...'
-                sh """
-                    docker build \
-                        --build-arg VITE_CLERK_PUBLISHABLE_KEY='${VITE_CLERK_PUBLISHABLE_KEY}' \
-                        --build-arg VITE_GROQ_API_KEY='${VITE_GROQ_API_KEY}' \
-                        --build-arg VITE_DATABASE_URL='${VITE_DATABASE_URL}' \
-                        --build-arg VITE_APP_URL='http://localhost:8080' \
-                        --build-arg VITE_BUILD_VERSION='${IMAGE_TAG}' \
-                        -t ${APP_NAME}:${IMAGE_TAG} \
-                        -t ${APP_NAME}:latest .
-                """
-            }
-        }
-
-        stage('Test Docker Image') {
-            steps {
-                echo '🧪 Testing Docker image...'
-                sh '''
-                    CONTAINER_ID=$(docker run -d -p 8081:8080 ${APP_NAME}:latest)
-                    sleep 15
-
-                    if curl -f http://localhost:8081/health; then
-                        echo "✓ Health check passed"
-                    else
-                        echo "✗ Health check failed"
-                        docker logs $CONTAINER_ID
-                        docker stop $CONTAINER_ID
-                        docker rm $CONTAINER_ID
-                        exit 1
-                    fi
-
-                    docker stop $CONTAINER_ID
-                    docker rm $CONTAINER_ID
-                '''
-            }
-        }
-
-        stage('Push to Docker Registry') {
-            when {
-                branch 'main'
-            }
-            steps {
-                echo '📤 Pushing Docker image to registry...'
                 script {
-                    docker.withRegistry("https://${DOCKER_REGISTRY}", 'docker-credentials') {
-                        sh """
-                            docker tag ${APP_NAME}:${IMAGE_TAG} ${DOCKER_REGISTRY}/${APP_NAME}:${IMAGE_TAG}
-                            docker tag ${APP_NAME}:latest ${DOCKER_REGISTRY}/${APP_NAME}:latest
-                            docker push ${DOCKER_REGISTRY}/${APP_NAME}:${IMAGE_TAG}
-                            docker push ${DOCKER_REGISTRY}/${APP_NAME}:latest
-                        """
-                    }
-                }
-            }
-        }
-
-        stage('Deploy to Production') {
-            when {
-                branch 'main'
-            }
-            steps {
-                echo '🚀 Deploying to production...'
-                script {
-                    def deployStatus = input(
-                        message: 'Deploy to production?',
-                        parameters: [
-                            choice(name: 'DEPLOY', choices: ['Yes', 'No'], description: 'Proceed with deployment?')
-                        ]
-                    )
-                    
-                    if (deployStatus == 'Yes') {
-                        echo '🎯 Deploying application...'
-                        sh """
-                            docker stop loanwise-prod || true
-                            docker rm loanwise-prod || true
-                            docker run -d \
-                                --name loanwise-prod \
-                                --restart unless-stopped \
-                                -p 80:8080 \
-                                -e NODE_ENV=production \
-                                ${APP_NAME}:${IMAGE_TAG}
-                            
-                            # Wait for container to start
-                            sleep 10
-                            
-                            # Verify deployment
-                            if docker ps | grep loanwise-prod; then
-                                echo "✅ Deployment successful!"
-                                echo "🌐 Application running at http://localhost"
-                            else
-                                echo "❌ Deployment failed!"
-                                docker logs loanwise-prod
-                                exit 1
-                            fi
-                        """
+                    // Check if test script exists in package.json
+                    def hasTestScript = sh(script: 'npm run | grep -q "test"', returnStatus: true)
+                    if (hasTestScript == 0) {
+                        sh 'npm test -- --passWithNoTests'
                     } else {
-                        echo '⏭️ Deployment skipped by user'
+                        echo '⏭️ No test script found in package.json - skipping tests'
                     }
                 }
             }
@@ -183,14 +80,22 @@ pipeline {
 
     post {
         success {
-            echo '✅ Build successful!'
+            echo '✅ Pipeline completed successfully!'
+            echo '🌐 Application built and ready for deployment'
+            echo '📦 Build artifacts available in dist/ directory'
+            echo ''
+            echo 'ℹ️ Note: Vercel auto-deploys from GitHub on push to main branch'
         }
         failure {
-            echo '❌ Build failed!'
+            echo '❌ Pipeline failed!'
+        }
+        unstable {
+            echo '⚠️ Pipeline completed with warnings'
+            echo '   Security vulnerabilities detected - run npm audit fix'
         }
         always {
             echo '🧹 Cleaning up...'
-            sh 'docker system prune -f || true'
+            sh 'rm -rf node_modules/.cache || true'
         }
     }
 }
