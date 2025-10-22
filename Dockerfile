@@ -42,11 +42,8 @@ ENV VITE_ANALYTICS_ID=${VITE_ANALYTICS_ID}
 ENV VITE_BUILD_VERSION=${VITE_BUILD_VERSION}
 ENV VITE_BUILD_TIMESTAMP=${VITE_BUILD_TIMESTAMP}
 
-# Type check and lint
-RUN npm run type-check
-RUN npm run lint
-
 # Build the application
+# Note: type-check and lint are handled by Jenkins pipeline before Docker build
 RUN npm run build
 
 # Stage 2: Production stage
